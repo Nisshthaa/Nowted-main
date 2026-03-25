@@ -7,21 +7,36 @@ import { useApp } from "../../context/useApp";
 
 const Notes: React.FC = () => {
   const [notes, setNotes] = useState<Note[]>([]);
-  const {selectedFolder,setSelectedNoteId,refreshNotes,setActiveNoteMode}=useApp()
+  const {selectedFolder,setSelectedNoteId,activeView,refreshNotes,setActiveNoteMode}=useApp()
   
   useEffect(() => {
-    if (!selectedFolder) return;
+  const fetchNotes = async () => {
+    try {
+      let res;
 
-    const fetchNotes = async () => {
-      try {
-        const res = await getNotes(selectedFolder.id)
-        setNotes(res.data.notes);
-      } catch (err) {
-        console.log(err);
+      if (activeView === "favorites") {
+        res = await getNotes({ favorite: true });
+      } else if (selectedFolder) {
+        res = await getNotes({ folderId: selectedFolder.id });
       }
-    };
-    fetchNotes();
-  }, [selectedFolder,refreshNotes]);
+
+      if (!res) {
+        setNotes([]);
+        return;
+      }
+
+      console.log("FULL:", res.data);
+
+      const data = res.data.notes || res.data.data;
+
+      setNotes(data);
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  fetchNotes();
+}, [selectedFolder, activeView, refreshNotes]);
 
   return (
     <>
@@ -30,7 +45,7 @@ const Notes: React.FC = () => {
           className="w-75 h-7 flex font-semibold text-(--text-primary) text-2xl"
           style={{ fontFamily: "var(--font-primary)" }}
         >
-          {selectedFolder?.name || "Select Folder"}
+          {activeView==="favorites"?"Favorites":selectedFolder?.name||"Select Folder"}
         </h3>
         {notes.map((note) => (
           <div

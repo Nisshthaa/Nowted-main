@@ -1,13 +1,14 @@
-import { api } from "./Axios"
+import type { GetNotesParams } from "../components/types";
+import { api } from "./Axios";
 
 
-export const getNotes=(folderId:string)=>{
-    return api.get(`/notes?folderId=${folderId}`)
-}
+export const getNotes = (params: GetNotesParams) => {
+  return api.get("/notes", { params });
+};
 
-export const getNotesData=(NotesId:string)=>{
-    return api.get(`/notes/${NotesId}`)
-}
+export const getNotesData = (NotesId: string) => {
+  return api.get(`/notes/${NotesId}`);
+};
 
 export const createNote = (data: {
   title: string;
@@ -15,4 +16,8 @@ export const createNote = (data: {
   folderId: string;
 }) => {
   return api.post("/notes", data);
+};
+
+export const updateNote = (id: string, data: { isFavorite?: boolean }) => {
+  return api.patch(`/notes/${id}`, data);
 };

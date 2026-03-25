@@ -1,15 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { Folder, FolderPlus, Plus, FolderOpen } from "lucide-react";
-import type { folder } from "../types";
 import { getFoldersData } from "../../Api/folders";
 import { useApp } from "../../context/useApp";
 import { createFolder } from "../../Api/folders";
 
 const Folders: React.FC = () => {
-  const [folders, setFolder] = useState<folder[]>([]);
   const [isCreating, setIsCreating] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
-  const { setSelectedFolder, setActiveNoteMode, selectedFolder } = useApp();
+  const { setSelectedFolder, setActiveNoteMode,folders,setFolder,setActiveView, selectedFolder } = useApp();
 
   useEffect(() => {
     const getFolders = async () => {
@@ -24,7 +22,7 @@ const Folders: React.FC = () => {
       }
     };
     getFolders();
-  });
+  },[]);
 
   const handleCreateFolder = async () => {
     if (!newFolderName.trim()) return;
@@ -36,6 +34,7 @@ const Folders: React.FC = () => {
 
       setNewFolderName("");
       setIsCreating(false);
+      
     } catch (err) {
       console.log(err);
     }
@@ -86,6 +85,7 @@ const Folders: React.FC = () => {
               onClick={() => {
                 setSelectedFolder(folder);
                 setActiveNoteMode("view");
+                setActiveView("all")
               }}
             >
               {isActive ? (

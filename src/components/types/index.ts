@@ -17,3 +17,8 @@ export type folder = {
   id: string;
   name: string;
 };
+
+export type GetNotesParams = {
+  folderId?: string;
+  favorite?: boolean;
+};

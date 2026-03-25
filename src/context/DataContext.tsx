@@ -12,7 +12,13 @@ type DataContextType = {
   setActiveNoteMode: (mode: "view" | "create") => void;
 
     refreshNotes: boolean;
-  setRefreshNotes: React.Dispatch<React.SetStateAction<boolean>>;
+  setRefreshNotes: React.Dispatch<React.SetStateAction<boolean>>
+
+  activeView:"all"|"favorites"
+  setActiveView:(view:"all"|"favorites")=>void
+
+  folders:folder[]
+  setFolder:React.Dispatch<React.SetStateAction<folder[]>>
 };
 
 

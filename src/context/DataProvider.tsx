@@ -6,7 +6,9 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   const [selectedFolder, setSelectedFolder] = useState<folder | null>(null);
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [activeNoteMode, setActiveNoteMode] = useState<"view" | "create">("view");
+  const [folders, setFolder] = useState<folder[]>([]);
   const [refreshNotes, setRefreshNotes] = useState(false);
+  const [activeView, setActiveView] = useState<"all"|"favorites">("all")
 
   return (
     <DataContext.Provider
@@ -17,7 +19,9 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
         setSelectedNoteId,
         activeNoteMode,
 setActiveNoteMode,
-refreshNotes, setRefreshNotes
+refreshNotes, setRefreshNotes,
+activeView,setActiveView,
+folders,setFolder
       }}
     >
       {children}

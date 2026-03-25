@@ -1,12 +1,15 @@
 import React from 'react'
+import { useApp } from '../../context/useApp'
 
 const Features :React.FC = () => {
+        const {setActiveView,setSelectedNoteId}=useApp()
+
   return (
     
        <div className='flex flex-col w-80 h-39 gap-4 '>
                 <p className='text-(--text-secondary) text-[16px] font-semibold' style={{ fontFamily: "var(--font-primary)" }}>More</p>
 
-                <div className='flex w-80 h-39 gap-4 '>
+                <div className='flex w-80 h-39 gap-4' onClick={()=>{setActiveView("favorites");setSelectedNoteId(null)}} >
                     <img className='w-5 h-5' src="src/assets/favrouite.svg" alt="favorites" />
                     <p className='text-(--text-secondary) font-semibold' style={{ fontFamily: "var(--font-primary)" }}>Favorites</p>
                 </div>

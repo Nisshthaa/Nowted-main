@@ -9,7 +9,7 @@ import { useApp } from "../../context/useApp";
 const Recent: React.FC= () => {
   const [notes, setNotes] = useState<Note[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
-  const {setSelectedFolder,setSelectedNoteId}=useApp()
+  const {setSelectedFolder,setSelectedNoteId,setActiveView }=useApp()
   useEffect(() => {
     const getRecent = async () => {
       try {
@@ -21,6 +21,8 @@ const Recent: React.FC= () => {
     };
     getRecent();
   }, []);
+
+  const {folders}=useApp()
 
   return (
     // recent-folders
@@ -34,11 +36,13 @@ const Recent: React.FC= () => {
 
       {notes.map((note) => (
         <div
-          onClick={() => {setActiveId(note.id);
-            setSelectedFolder({id: note.folderId, name: note.title})
-          setSelectedNoteId(note.id)
+          onClick={() => {  const folderName = folders.find(f => f.id === note.folderId)?.name;
+
+            setActiveId(note.id);
+            setSelectedFolder({id: note.folderId, name: folderName||"Unknown FOlder"})
+          setSelectedNoteId(note.id); setActiveView("all")
           }}
-            className={`flex items-center gap-3 w-full h-12 rounded-md cursor-pointer transition-all duration-200 ${activeId === note.id  ? "bg-[#6c797f] text-white"  : "text-(--text-secondary) hover:bg-[#2a2a2a] hover:text-white"}`}          key={note.id}
+            className={`flex items-center gap-3 w-full h-12 rounded-md cursor-pointer transition-all duration-200 ${activeId === note.id  ? "bg-[#705dcf] text-white"  : "text-(--text-secondary) hover:bg-[#2a2a2a] hover:text-white"}`}          key={note.id}
         >
           <FileText className="w-5 h-5 text-(--text-primary) " />
           <p

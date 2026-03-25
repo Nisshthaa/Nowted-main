@@ -9,15 +9,34 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { FullNote } from "../types";
-import { getNotesData } from "../../Api/notes";
+import { getNotesData, updateNote } from "../../Api/notes";
 import { formatDate } from "../utils/helpers";
 import { useApp } from "../../context/useApp";
 import CreateNoteForm from "./CreateNoteForm";
 
 const NotesDetails: React.FC = () => {
-  const { selectedNoteId, selectedFolder,activeNoteMode } = useApp();
+  const { selectedNoteId, selectedFolder,activeNoteMode,setRefreshNotes,setSelectedNoteId } = useApp();
   const [fullNote, setfullNote] = useState<FullNote | null>(null);
   const [showMenu, setShowMenu] = useState(false);
+
+
+
+const handleFavorite = async () => {
+  if (!fullNote) return;
+
+  try {
+    await updateNote(fullNote.id, {
+      isFavorite: true, 
+    });
+    
+
+    setRefreshNotes(prev => !prev); 
+    setSelectedNoteId(fullNote.id)
+    
+  } catch (err) {
+    console.log(err);
+  }
+};
 
   useEffect(() => {
     if (!selectedNoteId) return;
@@ -92,7 +111,7 @@ const NotesDetails: React.FC = () => {
             {showMenu && (
               <div className="flex flex-col w-53.5 h-37.5 bg-[#333333] p-3.75 justify-between gap-5 rounded-md absolute top-10 right-0.5">
                 <div className="flex flex-col gap-3 ">
-                  <div className="flex w-35 h-5 gap-3.75">
+                  <div className="flex w-35 h-5 gap-3.75" onClick={handleFavorite}>
                     <Star className="h-5 w-5 text-(--text-primary)" />
                     <p
                       className="font-regular text-[16px] text-(--text-primary)"
