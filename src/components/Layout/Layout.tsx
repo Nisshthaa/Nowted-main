@@ -10,7 +10,7 @@ const Layout: React.FC = () => {
   return (
     <div className="h-screen w-full bg-[#181818] flex">
       {/* LEFT */}
-      <div className="flex w-90 h-screen flex-col gap-4 pt-7.5 pb-7.5 ">
+      <div className="flex w-90 h-screen flex-col gap-4 pt-7.5 pb-7.5 px-5  ">
         <Header />
         <Recent/>
         <Folders/>

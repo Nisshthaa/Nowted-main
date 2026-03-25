@@ -6,8 +6,15 @@ type DataContextType = {
   setSelectedFolder: (folder: folder) => void;
 
   selectedNoteId: string | null;
-  setSelectedNoteId: (id: string) => void;
+  setSelectedNoteId: (id: string|null) => void;
+
+  activeNoteMode: "view" | "create";
+  setActiveNoteMode: (mode: "view" | "create") => void;
+
+    refreshNotes: boolean;
+  setRefreshNotes: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
-export const DataContext = createContext<DataContextType | null>(null);
 
+
+export const DataContext = createContext<DataContextType | null>(null);

@@ -7,7 +7,7 @@ import { useApp } from "../../context/useApp";
 
 const Notes: React.FC = () => {
   const [notes, setNotes] = useState<Note[]>([]);
-  const {selectedFolder,setSelectedNoteId}=useApp()
+  const {selectedFolder,setSelectedNoteId,refreshNotes,setActiveNoteMode}=useApp()
   
   useEffect(() => {
     if (!selectedFolder) return;
@@ -21,7 +21,7 @@ const Notes: React.FC = () => {
       }
     };
     fetchNotes();
-  }, [selectedFolder]);
+  }, [selectedFolder,refreshNotes]);
 
   return (
     <>
@@ -35,7 +35,7 @@ const Notes: React.FC = () => {
         {notes.map((note) => (
           <div
             className="flex flex-col h-24.5 w-full pl-5 gap-2.5 rounded-[3px] bg-(--folder-bg)"
-            key={note.id} onClick={()=>setSelectedNoteId(note.id)}
+            key={note.id} onClick={()=>{setSelectedNoteId(note.id); setActiveNoteMode("view")}}
           >
             <p
               className="w-67.5 h-7 font-semibold text-(--text-primary) text-[18px] "

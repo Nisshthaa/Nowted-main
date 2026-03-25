@@ -24,9 +24,9 @@ const Recent: React.FC= () => {
 
   return (
     // recent-folders
-    <div className="flex flex-col w-80 h-39 gap-2 cursor-pointer pr-5 pl-5">
+    <div className="flex flex-col h-39 gap-2 cursor-pointer ">
       <p
-        className="text-(--text-secondary) font-semibold "
+        className="text-(--text-secondary) font-semibold text-[16px] "
         style={{ fontFamily: "var(--font-primary)" }}
       >
         Recents
@@ -38,13 +38,11 @@ const Recent: React.FC= () => {
             setSelectedFolder({id: note.folderId, name: note.title})
           setSelectedNoteId(note.id)
           }}
-            
-          className={`flex gap-4 w-80 h-16  items-center rounded-md cursor-pointer pr-0 pl-0 transition-colors duration-200 ${activeId === note.id ? "bg-amber-500" : "hover:bg-[#2a2a2a]"}`}
-          key={note.id}
+            className={`flex items-center gap-3 w-full h-12 rounded-md cursor-pointer transition-all duration-200 ${activeId === note.id  ? "bg-[#6c797f] text-white"  : "text-(--text-secondary) hover:bg-[#2a2a2a] hover:text-white"}`}          key={note.id}
         >
           <FileText className="w-5 h-5 text-(--text-primary) " />
           <p
-            className="text-(--text-primary) font-semibold "
+            className="text-(--text-primary) font-semibold text-[18px]"
             style={{ fontFamily: "var(--font-primary)" }}
           >
             {note.title}
