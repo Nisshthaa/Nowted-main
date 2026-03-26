@@ -3,7 +3,7 @@ export type Note = {
   title: string;
   preview: string;
   createdAt: string;
-  folderId:string
+  folderId: string;
 };
 
 export type FullNote = {
@@ -21,4 +21,6 @@ export type folder = {
 export type GetNotesParams = {
   folderId?: string;
   favorite?: boolean;
+  archived?: boolean;
+  limit?: number;
 };

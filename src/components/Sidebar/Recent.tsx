@@ -9,7 +9,7 @@ import { useApp } from "../../context/useApp";
 const Recent: React.FC= () => {
   const [notes, setNotes] = useState<Note[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
-  const {setSelectedFolder,setSelectedNoteId,setActiveView }=useApp()
+  const {setSelectedFolder,setSelectedNoteId,setActiveView,setActiveNoteMode }=useApp()
   useEffect(() => {
     const getRecent = async () => {
       try {
@@ -26,9 +26,9 @@ const Recent: React.FC= () => {
 
   return (
     // recent-folders
-    <div className="flex flex-col h-39 gap-2 cursor-pointer ">
+    <div className="flex flex-col h-39 cursor-pointer ">
       <p
-        className="text-(--text-secondary) font-semibold text-[16px] "
+        className="text-(--text-secondary) p-1 font-semibold text-[17px] "
         style={{ fontFamily: "var(--font-primary)" }}
       >
         Recents
@@ -40,9 +40,10 @@ const Recent: React.FC= () => {
 
             setActiveId(note.id);
             setSelectedFolder({id: note.folderId, name: folderName||"Unknown FOlder"})
-          setSelectedNoteId(note.id); setActiveView("all")
+          setSelectedNoteId(note.id); setActiveView("all"); setActiveNoteMode("view");
+
           }}
-            className={`flex items-center gap-3 w-full h-12 rounded-md cursor-pointer transition-all duration-200 ${activeId === note.id  ? "bg-[#705dcf] text-white"  : "text-(--text-secondary) hover:bg-[#2a2a2a] hover:text-white"}`}          key={note.id}
+            className={`flex items-center gap-3 w-full h-12 p-1 rounded-md cursor-pointer transition-all duration-200 ${activeId === note.id  ? "bg-[#705dcf] text-white"  : "text-(--text-secondary) hover:bg-[#2a2a2a] hover:text-white"}`}          key={note.id}
         >
           <FileText className="w-5 h-5 text-(--text-primary) " />
           <p

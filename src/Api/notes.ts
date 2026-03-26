@@ -1,7 +1,6 @@
 import type { GetNotesParams } from "../components/types";
 import { api } from "./Axios";
 
-
 export const getNotes = (params: GetNotesParams) => {
   return api.get("/notes", { params });
 };
@@ -18,6 +17,9 @@ export const createNote = (data: {
   return api.post("/notes", data);
 };
 
-export const updateNote = (id: string, data: { isFavorite?: boolean }) => {
+export const updateNote = (
+  id: string,
+  data: { isFavorite?: boolean; isArchived?: boolean },
+) => {
   return api.patch(`/notes/${id}`, data);
 };
