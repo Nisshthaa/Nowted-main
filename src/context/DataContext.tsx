@@ -1,27 +1,38 @@
 import { createContext } from "react";
-import type { folder } from "../components/types";
+import type { Folder, Note } from "../components/types";
 
-type DataContextType = {
-  selectedFolder: folder | null;
-  setSelectedFolder: (folder: folder) => void;
+type NoteMode = "view" | "create" | "restore" | null;
+type ActiveView = "all" | "favorites" | "archived" | "trash"|null;
 
+export type DataContextType = {
+
+  
+  selectedFolder: Folder | null;
+  setSelectedFolder: React.Dispatch<React.SetStateAction<Folder | null>>;
+
+  folders: Folder[];
+  setFolders: React.Dispatch<React.SetStateAction<Folder[]>>;
+
+  
   selectedNoteId: string | null;
-  setSelectedNoteId: (id: string | null) => void;
+  setSelectedNoteId: React.Dispatch<React.SetStateAction<string | null>>;
 
-  activeNoteMode: "view" | "create";
-  setActiveNoteMode: (mode: "view" | "create") => void;
+  activeNoteMode: NoteMode;
+  setActiveNoteMode: React.Dispatch<React.SetStateAction<NoteMode>>;
 
   refreshNotes: boolean;
   setRefreshNotes: React.Dispatch<React.SetStateAction<boolean>>;
 
-  activeView: "all" | "favorites" | "archived";
-  setActiveView: (view: "all" | "favorites" | "archived") => void;
+  activeView: ActiveView;
+  setActiveView: React.Dispatch<React.SetStateAction<ActiveView>>;
 
-  folders: folder[];
-  setFolder: React.Dispatch<React.SetStateAction<folder[]>>;
+
+  notes: Note[];
+  setNotes: React.Dispatch<React.SetStateAction<Note[]>>;
 
   searchText: string;
   setSearchText: React.Dispatch<React.SetStateAction<string>>;
+
 };
 
 export const DataContext = createContext<DataContextType | null>(null);
