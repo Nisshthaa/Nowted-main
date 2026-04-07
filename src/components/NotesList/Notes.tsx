@@ -68,10 +68,9 @@ const Notes: React.FC = () => {
 }, [noteId, setActiveNoteMode, setSelectedNoteId]);
 
   return (
-    <div className="flex flex-col w-100 h-screen pt-7.5 pb-7.5 p-4 gap-5 bg-(--panel-bg) overflow-y-auto">
-      {/*Header */}
+    <div className="flex flex-col w-100 h-screen  p-4 gap-5 bg-(--panel-bg) ">
       <h3
-        className="w-full min-w-0 font-semibold text-(--text-primary) text-2xl line-clamp-2 "
+        className="w-full min-w-0 sticky font-semibold text-(--text-primary) text-2xl line-clamp-2  "
         style={{ fontFamily: "var(--font-primary)" }}
       >
         {activeView === "favorites"
@@ -83,7 +82,8 @@ const Notes: React.FC = () => {
               : selectedFolder?.name || "Select Folder"}
       </h3>
 
-      {notes.map((note) => (
+     <div className="overflow-y-auto flex flex-col gap-5 pb-7.5 " >
+       {notes.map((note) => (
         <div
           key={note.id}
           onClick={(e) => {
@@ -112,7 +112,7 @@ const Notes: React.FC = () => {
 
             setActiveNoteMode("view");
           }}
-          className={`flex flex-col w-full p-4 gap-2 rounded-lg cursor-pointer transition-all duration-200 border border-(--border-color) ${
+          className={`flex flex-col w-full p-4 gap-2 rounded-lg cursor-pointer transition-all duration-200  border border-(--border-color) ${
             selectedNoteId === note.id
               ? "bg-(--hover-bg)"
               : "bg-(--card-bg) hover:bg-(--hover-bg)"
@@ -145,6 +145,7 @@ const Notes: React.FC = () => {
       {!hasMore && notes.length > 0 && (
         <p className="text-center text-(--text-secondary)">No more notes</p>
       )}
+     </div>
     </div>
   );
 };
