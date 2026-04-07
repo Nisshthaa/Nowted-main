@@ -4,6 +4,7 @@ import { useApp } from "../../context/useApp";
 import { restoreNote } from "../../Api/notes";
 import { showError, showSuccess } from "../utils/toaster";
 import type { RestoreProps } from "../types";
+import { getFoldersData } from "../../Api/folders";
 
 const Restore: React.FC<RestoreProps> = ({ noteId, noteTitle }) => {
   const {
@@ -11,6 +12,7 @@ const Restore: React.FC<RestoreProps> = ({ noteId, noteTitle }) => {
     setSelectedNoteId,
     setActiveView,
     setActiveNoteMode,
+    setFolders
   } = useApp();
 
   const handleRestore = async () => {
@@ -19,6 +21,10 @@ const Restore: React.FC<RestoreProps> = ({ noteId, noteTitle }) => {
     try {
       await restoreNote(noteId);
 
+      
+
+const response = await getFoldersData();
+setFolders(response.data.folders);
       setRefreshNotes((prev) => !prev);
       setSelectedNoteId(null);
 
