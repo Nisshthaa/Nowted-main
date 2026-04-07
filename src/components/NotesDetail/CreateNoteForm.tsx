@@ -1,7 +1,7 @@
 import { Calendar, Folder, Plus } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useApp } from "../../context/useApp";
-import { createNote, getNotes } from "../../Api/notes";
+import { createNote } from "../../Api/notes";
 import { showError, showSuccess } from "../utils/toaster";
 
 const CreateNoteForm: React.FC = () => {
@@ -16,7 +16,9 @@ const CreateNoteForm: React.FC = () => {
   } = useApp();
 
   const handleCreate = async () => {
-    if (!title || !content || !selectedFolder) return;
+    if (!title || !content || !selectedFolder) {
+      return showError("Invali details!");
+    }
 
     try {
       await createNote({
@@ -24,13 +26,13 @@ const CreateNoteForm: React.FC = () => {
         content,
         folderId: selectedFolder.id,
       });
-      await getNotes({ folderId: selectedFolder.id });
+
       setRefreshNotes((prev) => !prev);
       setActiveNoteMode("view");
       setSelectedNoteId(null);
+
       showSuccess("Note Created Successfully!");
-    } catch (err) {
-      console.log(err);
+    } catch {
       showError("Failed to create Note!");
     }
   };
@@ -44,76 +46,50 @@ const CreateNoteForm: React.FC = () => {
   }, [selectedFolder]);
 
   return (
-    <div className="w-250 h-screen p-12.5 gap-15 flex flex-col ">
-      <div className="flex flex-col gap-7.5">
-        {/* title */}
-        <div className="flex justify-between ">
-          <input
-            className="font-semibold text-[32px] text-(--text-primary) border "
-            style={{ fontFamily: "var(--font-primary)" }}
-            placeholder="Enter title...."
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-          />
+    <div className="flex flex-col h-screen p-8 gap-8 bg-(--sidebar-bg)">
+      <input
+        className="text-3xl font-semibold text-(--text-primary) bg-transparent outline-none border-b border-(--border-color) pb-2"
+        placeholder="Enter title..."
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+      />
+
+      <div className="flex flex-col gap-3">
+        <div className="flex justify-between max-w-md">
+          <div className="flex items-center gap-3">
+            <Calendar className="w-5 h-5 text-(--text-secondary)" />
+            <p className="text-(--text-secondary)">Date</p>
+          </div>
+
+          <p className="text-(--text-primary)">
+            {new Date().toLocaleDateString("en-GB")}
+          </p>
         </div>
 
-        {/* date details */}
-        <div className="w-172.5 h-16.75 flex flex-col gap-3.75">
-          <div className="w-80 h-4.5 flex justify-between gap-6">
-            <div className="flex gap-5">
-              <Calendar className="w-4.5 h-6.5 text-(--text-secondary)" />
-              <p
-                className="font-semibold text-[17px] text-(--text-secondary)"
-                style={{ fontFamily: "var(--font-primary)" }}
-              >
-                Date
-              </p>
-            </div>
-            <p
-              className="font-semibold text-[17px] underline text-(--text-primary) "
-              style={{ fontFamily: "var(--font-primary)" }}
-            >
-              {new Date().toLocaleDateString("en-GB")}
-            </p>
+        <hr className="border-(--border-color)" />
+
+        <div className="flex justify-between max-w-md">
+          <div className="flex items-center gap-3">
+            <Folder className="w-5 h-5 text-(--text-secondary)" />
+            <p className="text-(--text-secondary)">Folder</p>
           </div>
 
-          <hr className=" w-200 h-2 text-[#FFFFFF1A]" />
-
-          {/* folder details */}
-          <div className="w-80 h-4.5 flex justify-between gap-6">
-            <div className="flex gap-5">
-              <Folder className="w-4.5 h-6.5 text-(--text-secondary)" />
-              <p
-                className="font-semibold text-[17px] text-(--text-secondary)"
-                style={{ fontFamily: "var(--font-primary)" }}
-              >
-                Folder
-              </p>
-            </div>
-            <p
-              className="font-semibold text-[17px] underline text-(--text-primary) "
-              style={{ fontFamily: "var(--font-primary)" }}
-            >
-              {selectedFolder?.name}
-            </p>
-          </div>
+          <p className="text-(--text-primary)">{selectedFolder?.name}</p>
         </div>
       </div>
 
-      {/* notes details */}
       <textarea
-        className="w-225 h-175 text-[16px] text-(--text-primary)  "
-        style={{ fontFamily: "var(--font-primary)" }}
+        className="flex-1 bg-(--card-bg) border border-(--border-color) rounded-lg p-5 text-(--text-primary) outline-none resize-none"
         value={content}
         onChange={(e) => setContent(e.target.value)}
-        placeholder="Write your Note...."
+        placeholder="Write your note..."
       />
 
       <button
-        className=" flex justify-center items-center gap-3 w-65 h-10  bg-(--btn-bg) text-(--text-primary) cursor-pointer"
+        className="flex items-center justify-center gap-2 w-40 h-10 bg-(--btn-bg) hover:bg-(--btn-hover) text-(--text-primary) rounded-md transition-all cursor-pointer"
         onClick={handleCreate}
       >
-        <Plus className="h-5 w-5" /> Add Note
+        <Plus className="w-5 h-5" /> Add Note
       </button>
     </div>
   );
