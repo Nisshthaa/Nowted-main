@@ -7,58 +7,127 @@ import {
   Star,
   Trash,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import type { FullNote } from "../types";
-import { getNotesData, updateNote } from "../../Api/notes";
+import {  deleteNote, getNotesData, updateNote } from "../../Api/notes";
 import { formatDate } from "../utils/helpers";
 import { useApp } from "../../context/useApp";
 import CreateNoteForm from "./CreateNoteForm";
-import { showError, showSuccess } from "../utils/toaster";
+import {  showConfirm, showError, showSuccess } from "../utils/toaster";
+import { useURLState } from "../../hooks/useURLState";
+import Restore from "./Restore";
 
 const NotesDetails: React.FC = () => {
   const {
     selectedNoteId,
-    selectedFolder,
+
     activeNoteMode,
     setRefreshNotes,
     setSelectedNoteId,
   } = useApp();
+
+  const { updateURL } = useURLState();
+
   const [fullNote, setfullNote] = useState<FullNote | null>(null);
   const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
 
+  useEffect(() => {
+    const init = () => {
+      if (!selectedNoteId) {
+        setfullNote(null);
+      }
+    };
+    init();
+  }, [selectedNoteId]);
   const handleArchive = async () => {
     if (!fullNote) return;
 
     try {
-      await updateNote(fullNote.id, {
-        isArchived: true,
-      });
+      const updatedValue = !fullNote.isArchived;
 
+      await updateNote(fullNote.id, { isArchived: updatedValue });
+
+      setShowMenu(false);
+      setfullNote((prev) =>
+        prev ? { ...prev, isArchived: updatedValue } : prev,
+      );
+      updateURL({ note: null });
       setRefreshNotes((prev) => !prev);
       setSelectedNoteId(null);
-      showSuccess("Folder Archived!");
-    } catch (err) {
-      console.log(err);
-      showError("Failed to Archive");
+      setfullNote(null);
+
+      if (updatedValue) {
+        showSuccess("Note Archived!");
+      } else {
+        showSuccess("Note Unarchived!");
+      }
+    } catch {
+      showError("Failed to update archive");
     }
+  };
+
+  const handleDelete = () => {
+    if (!fullNote) return;
+
+    showConfirm("Move this note to Trash?", async () => {
+      try {
+        await deleteNote(fullNote.id, {
+          deletedAt: new Date().toISOString(),
+        });
+
+        setShowMenu(false);
+        updateURL({ note: null });
+        setRefreshNotes((prev) => !prev);
+        setSelectedNoteId(null);
+        setfullNote(null);
+
+        showSuccess("Moved to Trash!");
+      } catch {
+        showError("Delete failed");
+      }
+    });
   };
 
   const handleFavorite = async () => {
     if (!fullNote) return;
 
     try {
-      await updateNote(fullNote.id, {
-        isFavorite: true,
-      });
+      const updatedValue = !fullNote.isFavorite;
 
+      await updateNote(fullNote.id, { isFavorite: updatedValue });
+
+      setShowMenu(false);
+
+      setfullNote((prev) =>
+        prev ? { ...prev, isFavorite: updatedValue } : prev,
+      );
+      setSelectedNoteId(null);
+      setfullNote(null);
+
+      updateURL({ note: null });
       setRefreshNotes((prev) => !prev);
-      setSelectedNoteId(fullNote.id);
-      showSuccess("Added to Favorites!");
-    } catch (err) {
-      console.log(err);
-      showError("Failed to Add!");
+
+      showSuccess(
+        updatedValue ? "Added to Favorites!" : "Removed from Favorites!",
+      );
+    } catch {
+      showError("Failed to update favorite");
     }
   };
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowMenu(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   useEffect(() => {
     if (!selectedNoteId) return;
@@ -72,155 +141,121 @@ const NotesDetails: React.FC = () => {
         console.log(err);
       }
     };
+
     fetchNotes();
   }, [selectedNoteId]);
 
-  if (activeNoteMode === "create") {
-    return <CreateNoteForm />;
-  }
+  if (activeNoteMode === "create") return <CreateNoteForm />;
+  if (activeNoteMode === "restore" && fullNote && selectedNoteId)
+    return <Restore noteId={fullNote.id} noteTitle={fullNote.title} />;
 
   if (!selectedNoteId)
     return (
-      <div className="w-250 h-screen p-12.5 gap-2.5 flex flex-col justify-center items-center ">
-        <FileText
-          className="w-20 h-20 text-(--text-primary) "
-          strokeWidth={1}
-        />
-        <p
-          className="text-(--text-primary) text-[30px] font-semibold"
-          style={{ fontFamily: "var(--font-primary)" }}
-        >
+      <div className="flex flex-col items-center justify-center h-screen gap-4 bg-(--sidebar-bg)">
+        <FileText className="w-20 h-20 text-(--text-primary)" strokeWidth={1} />
+        <p className="text-(--text-primary) text-3xl font-semibold">
           Select a note to view
         </p>
-
-        <div className="w-120 h-9 flex flex-col justify-center items-center ">
-          <p
-            className="text-(--text-secondary) text-[16px] font-regular flex flex-col flex-wrap"
-            style={{ fontFamily: "var(--font-primary)" }}
-          >
-            Choose a note from the list on the left to view its contents,or
+        <div className="flex flex-col gap-1">
+          <p className="text-(--text-secondary) text-m text-center ">
+            Choose a note from the list on the left to view its contents, or
             create a
           </p>
-          <p
-            className="text-(--text-secondary) text-[16px] font-regular"
-            style={{ fontFamily: "var(--font-primary)" }}
-          >
+          <p className="text-(--text-secondary) text-m text-center ">
             new note to add to your collection.
           </p>
         </div>
       </div>
     );
 
-  if (!fullNote) return <div className="p-10 text-white">Loading....</div>;
+  if (!fullNote)
+    return <div className="p-10  text-(--text-primary)">Loading...</div>;
+
   return (
-    // notes-details
-    <div className="w-250 h-screen p-12.5 gap-10 flex flex-col ">
-      <div className="flex flex-col gap-7.5">
-        {/* title */}
-        <div className="flex justify-between ">
-          <h3
-            className="font-semibold text-[32px] text-(--text-primary)"
-            style={{ fontFamily: "var(--font-primary)" }}
-          >
+    <div className="flex flex-col h-screen p-8 gap-8 bg-(--panel-bg)">
+      <div className="flex flex-col gap-6">
+        <div className="flex justify-between items-start">
+          <h3 className="text-(--text-primary) text-3xl font-semibold">
             {fullNote.title}
           </h3>
-          <div className="relative">
+
+          <div ref={menuRef} className="relative flex gap-15 justify-center">
+            {fullNote.isFavorite && (
+              <Star className="w-6 h-6 text-yellow-400 fill-yellow-400" />
+            )}
             <CircleEllipsis
-              className="text-(--text-secondary) w-7.5 h-7.5 rounded-[100px] absolute cursor-pointer"
+              className="text-(--text-secondary) w-6 h-6 cursor-pointer"
               onClick={() => setShowMenu((prev) => !prev)}
             />
+
             {showMenu && (
-              <div className="flex flex-col w-53.5 h-37.5 bg-[#333333] p-3.75 justify-between gap-5 rounded-md absolute top-10 right-0.5">
-                <div className="flex flex-col gap-3 ">
-                  <div
-                    className="flex w-35 h-5 gap-3.75"
-                    onClick={handleFavorite}
-                  >
-                    <Star className="h-5 w-5 text-(--text-primary)" />
-                    <p
-                      className="font-regular text-[16px] text-(--text-primary)"
-                      style={{ fontFamily: "var(--font-primary)" }}
-                    >
-                      Add to favorites
-                    </p>
-                  </div>
-                  <div
-                    className="flex w-35 h-5 gap-3.75"
-                    onClick={handleArchive}
-                  >
-                    <Archive className="h-5 w-5 text-(--text-primary)" />
-                    <p
-                      className="font-regular text-[16px] text-(--text-primary)"
-                      style={{ fontFamily: "var(--font-primary)" }}
-                    >
-                      Archived
-                    </p>
-                  </div>
+              <div className="absolute right-0 top-10 flex flex-col w-52 bg-(--card-bg) border border-(--border-color) rounded-lg shadow-md p-3 gap-2">
+                <div
+                  className="flex items-center gap-3 p-2 rounded-md cursor-pointer hover:bg-(--hover-bg)"
+                  onClick={handleFavorite}
+                >
+                  <Star className="w-5 h-5 text-(--text-primary)" />
+                  <p className="text-(--text-primary)">
+                    {fullNote?.isFavorite
+                      ? "Remove from Favorites"
+                      : "Add to Favorites"}
+                  </p>
                 </div>
 
-                <hr className="w-43 h-1 text-[#FFFFFF1A]" />
-
-                <div className="flex w-35 h-5 gap-3.75">
-                  <Trash className="h-5 w-5 text-(--text-primary)" />
-                  <p
-                    className="font-regular text-[16px] text-(--text-primary)"
-                    style={{ fontFamily: "var(--font-primary)" }}
-                  >
-                    Delete
+                <div
+                  className="flex items-center gap-3 p-2 rounded-md cursor-pointer hover:bg-(--hover-bg)"
+                  onClick={handleArchive}
+                >
+                  <Archive className="w-5 h-5 text-(--text-primary)" />
+                  <p className="text-(--text-primary)">
+                    {fullNote?.isArchived ? "Unarchive" : "Archive"}
                   </p>
+                </div>
+
+                <hr className="border-(--border-color)" />
+
+                <div
+                  className="flex items-center gap-3 p-2 rounded-md cursor-pointer hover:bg-(--hover-bg)"
+                  onClick={handleDelete}
+                >
+                  <Trash className="w-5 h-5 text-(--text-primary)" />
+                  <p className="text-(--text-primary)">Delete</p>
                 </div>
               </div>
             )}
           </div>
         </div>
 
-        {/* date details */}
-        <div className="w-172.5 h-16.75 flex flex-col gap-3.75">
-          <div className="w-80 h-4.5 flex justify-between gap-6">
-            <div className="flex gap-5">
-              <Calendar className="w-4.5 h-6.5 text-(--text-secondary)" />
-              <p
-                className="font-semibold text-[17px] text-(--text-secondary)"
-                style={{ fontFamily: "var(--font-primary)" }}
-              >
-                Date
-              </p>
+        <div className="flex flex-col gap-3">
+          <div className="flex gap-25 max-w-md">
+            <div className="flex gap-6 items-center">
+              <Calendar className="w-5 h-5 text-(--text-secondary)" />
+              <p className="text-(--text-secondary)">Date</p>
             </div>
-            <p
-              className="font-semibold text-[17px] underline text-(--text-primary) "
-              style={{ fontFamily: "var(--font-primary)" }}
-            >
+
+            <p className="text-(--text-primary)">
               {formatDate(fullNote.createdAt)}
             </p>
           </div>
 
-          <hr className=" w-200 h-2 text-[#FFFFFF1A]" />
+          <hr className="border-(--border-color)" />
 
-          {/* folder details */}
-          <div className="w-80 h-4.5 flex justify-between gap-6">
-            <div className="flex gap-5">
-              <Folder className="w-4.5 h-6.5 text-(--text-secondary)" />
-              <p
-                className="font-semibold text-[17px] text-(--text-secondary)"
-                style={{ fontFamily: "var(--font-primary)" }}
-              >
-                Folder
-              </p>
+          <div className="flex gap-25 max-w-md">
+            <div className="flex gap-6 items-center">
+              <Folder className="w-5 h-5 text-(--text-secondary)" />
+              <p className="text-(--text-secondary)">Folder</p>
             </div>
-            <p
-              className="font-semibold text-[17px] underline text-(--text-primary) "
-              style={{ fontFamily: "var(--font-primary)" }}
-            >
-              {selectedFolder?.name}
+
+            <p className="text-(--text-primary)">
+              {fullNote.folder?.name || "Unknown Folder"}
             </p>
           </div>
         </div>
       </div>
 
-      {/* notes details */}
       <div
-        className="w-225 h-175 text-[17px] text-(--text-primary) overflow-y-auto "
-        style={{ fontFamily: "var(--font-primary)" ,whiteSpace: "pre-wrap"}}
+        className="flex-1 overflow-y-auto  border border-(--border-color) rounded-lg p-6 text-(--text-primary) bg-(--sidebar-bg) text-[16px] leading-relaxed"
+        style={{ whiteSpace: "pre-wrap" }}
       >
         {fullNote.content}
       </div>

@@ -16,10 +16,21 @@ export const createNote = (data: {
 }) => {
   return api.post("/notes", data);
 };
-
-export const updateNote = (
+export const updateNote =async (
   id: string,
-  data: { isFavorite?: boolean; isArchived?: boolean },
+  data: { isFavorite?: boolean; isArchived?: boolean; deletedAt?:string|null},
 ) => {
-  return api.patch(`/notes/${id}`, data);
+  return await api.patch(`/notes/${id}`, data);
+};
+
+
+export const deleteNote =async (
+  id: string,
+  data: { deletedAt?: string | null }
+) => {
+  return await api.delete(`/notes/${id}`, {data}); 
+};
+
+export const restoreNote = async(id: string) => {
+  return await api.post(`/notes/${id}/restore`);
 };
