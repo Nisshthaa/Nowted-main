@@ -1,59 +1,85 @@
 import React, { useEffect, useState } from "react";
 import { FileText } from "lucide-react";
-import type {Note} from "../types";
+import type { Note } from "../types";
 import { getRecentFolders } from "../../Api/folders";
 import { useApp } from "../../context/useApp";
+import { useNoteActions } from "../../hooks/useNoteActions";
 
-
-
-const Recent: React.FC= () => {
+const Recent: React.FC = () => {
   const [notes, setNotes] = useState<Note[]>([]);
-  const [activeId, setActiveId] = useState<string | null>(null);
-  const {setSelectedFolder,setSelectedNoteId,setActiveView,setActiveNoteMode }=useApp()
+  const { openNote } = useNoteActions();
+
+  const { setSelectedFolder, selectedNoteId, folders } = useApp();
+
+
   useEffect(() => {
     const getRecent = async () => {
       try {
-        const response = await getRecentFolders()
+        const response = await getRecentFolders();
         setNotes(response.data.recentNotes);
       } catch (err) {
         console.log(err);
       }
     };
+
     getRecent();
   }, []);
 
-  const {folders}=useApp()
-
   return (
-    // recent-folders
-    <div className="flex flex-col h-39 cursor-pointer ">
-      <p
-        className="text-(--text-secondary) p-1 font-semibold text-[17px] "
-        style={{ fontFamily: "var(--font-primary)" }}
-      >
-        Recents
-      </p>
+    <div className="flex flex-col h-35 gap-1">
+      {/* Header */}
+      <div className="flex justify-between items-center h-5">
+        <p className="text-(--text-heading) px-2 font-semibold text-[17px]">
+          Recents
+        </p>
+      </div>
 
-      {notes.map((note) => (
-        <div
-          onClick={() => {  const folderName = folders.find(f => f.id === note.folderId)?.name;
+      {/* Notes */}
+      {notes.map((note) => {
+        const isActive = selectedNoteId === note.id;
 
-            setActiveId(note.id);
-            setSelectedFolder({id: note.folderId, name: folderName||"Unknown FOlder"})
-          setSelectedNoteId(note.id); setActiveView("all"); setActiveNoteMode("view");
+        return (
+          <div
+            key={note.id}
+            className={`group flex items-center gap-3 w-full h-12 px-2 py-1 rounded-md cursor-pointer transition-all ${
+              isActive ? "bg-(--accent)" : "hover:bg-(--hover-bg)"
+            }`}
+            onClick={() => {
+              const folderId = note.folderId ?? "";
+              const folderName = folders.find(
+                (f) => f.id === note.folderId,
+              )?.name;
 
-          }}
-            className={`flex items-center gap-3 w-full h-12 p-1 rounded-md cursor-pointer transition-all duration-200 ${activeId === note.id  ? "bg-[#705dcf] text-white"  : "text-(--text-secondary) hover:bg-[#2a2a2a] hover:text-white"}`}          key={note.id}
-        >
-          <FileText className="w-5 h-5 text-(--text-primary) " />
-          <p
-            className="text-(--text-primary) font-semibold text-[18px]"
-            style={{ fontFamily: "var(--font-primary)" }}
+              setSelectedFolder({
+                id: folderId,
+                name: folderName || "Unknown Folder",
+              });
+
+              openNote(note.id, folderId);
+            }}
           >
-            {note.title}
-          </p>
-        </div>
-      ))}
+            {/* Icon */}
+            <FileText
+              className={`w-5 h-5 ${
+                isActive
+                  ? "text-white"
+                  : "text-(--text-secondary) group-hover:text-(--text-primary)"
+              }`}
+            />
+
+            {/* Title */}
+            <p
+              className={`font-semibold text-[18px] ${
+                isActive
+                  ? "text-white  "
+                  : "text-(--text-secondary) group-hover:text-(--text-primary)"
+              }`}
+            >
+              {note.title}
+            </p>
+          </div>
+        );
+      })}
     </div>
   );
 };
