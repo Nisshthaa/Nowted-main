@@ -6,14 +6,13 @@ import Notes from "../NotesList/Notes";
 import NotesDetails from "../NotesDetail/NotesDetails";
 
 const Layout: React.FC = () => {
-
   return (
-    <div className="h-screen w-full bg-[#181818] flex">
-      {/* LEFT */}
-      <div className="flex w-90 h-screen flex-col gap-5 pt-7.5 pb-7.5 px-5  ">
+    <div className="h-screen w-full bg-(--sidebar-bg) flex">
+      {/* left */}
+      <div className="flex w-90 h-screen flex-col gap-6 pt-7.5 pb-7.5 px-5  ">
         <Header />
-        <Recent/>
-        <Folders/>
+        <Recent />
+        <Folders />
         <More />
       </div>
 
@@ -22,7 +21,7 @@ const Layout: React.FC = () => {
       <Notes />
 
       {/* RIGHT */}
-      <div className="flex-1 bg-[#181818]">
+      <div className="flex-1 ">
         <NotesDetails />
       </div>
     </div>
