@@ -71,7 +71,7 @@ const Notes: React.FC = () => {
     <div className="flex flex-col w-100 h-screen pt-7.5 pb-7.5 p-4 gap-5 bg-(--panel-bg) overflow-y-auto">
       {/*Header */}
       <h3
-        className="w-75 h-7 flex font-semibold text-(--text-primary) text-2xl"
+        className="w-full min-w-0 font-semibold text-(--text-primary) text-2xl line-clamp-2 "
         style={{ fontFamily: "var(--font-primary)" }}
       >
         {activeView === "favorites"

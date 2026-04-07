@@ -184,7 +184,7 @@ const NotesDetails: React.FC = () => {
               <Star className="w-6 h-6 text-yellow-400 fill-yellow-400" />
             )}
             <CircleEllipsis
-              className="text-(--text-secondary) w-6 h-6 cursor-pointer"
+              className="text-(--text-secondary) w-9 h-9 cursor-pointer"
               onClick={() => setShowMenu((prev) => !prev)}
             />
 

@@ -20,12 +20,12 @@ import type { Folder as FolderType } from "../types";
 import { useURLState } from "../../hooks/useURLState";
 
 const Folders: React.FC = () => {
-  const [isCreating, setIsCreating] = useState(false); 
-  const [newFolderName, setNewFolderName] = useState(""); 
-  const [debouncedSearch, setDebouncedSearch] = useState(""); 
+  const [isCreating, setIsCreating] = useState(false);
+  const [newFolderName, setNewFolderName] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [editingFolderId, setEditingFolderId] = useState<string | null>(null);
   const [editedName, setEditedName] = useState("");
-  const { folderId, view, updateURL } = useURLState(); 
+  const { folderId, view, updateURL } = useURLState();
 
   const {
     setSelectedFolder,
@@ -42,7 +42,6 @@ const Folders: React.FC = () => {
   const initialView = useRef(view);
   const initialSelectedFolder = useRef(selectedFolder);
 
-
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedSearch(searchText);
@@ -50,11 +49,10 @@ const Folders: React.FC = () => {
     return () => clearTimeout(handler);
   }, [searchText]);
 
- 
   useEffect(() => {
     const getFolders = async () => {
       try {
-        const response = await getFoldersData(); 
+        const response = await getFoldersData();
         const foldersData: FolderType[] = response.data.folders;
 
         setFolders(foldersData);
@@ -71,7 +69,6 @@ const Folders: React.FC = () => {
           return;
         }
 
-        
         if (initialFolderId.current) {
           const found = foldersData.find(
             (f) => f.id === initialFolderId.current,
@@ -83,7 +80,6 @@ const Folders: React.FC = () => {
           }
         }
 
-        
         if (
           !initialSelectedFolder.current &&
           !initialView.current &&
@@ -99,7 +95,6 @@ const Folders: React.FC = () => {
     getFolders();
   }, [setFolders, setSelectedFolder, setActiveView]);
 
-  
   const filteredFolders =
     debouncedSearch.trim() === ""
       ? folders
@@ -107,18 +102,17 @@ const Folders: React.FC = () => {
           folder.name.toLowerCase().includes(debouncedSearch.toLowerCase()),
         );
 
-
   const handleCreateFolder = async () => {
     if (!newFolderName.trim()) return;
 
     try {
-      await createFolder(newFolderName); 
+      await createFolder(newFolderName);
 
       const response = await getFoldersData();
-      setFolders(response.data.folders); 
+      setFolders(response.data.folders);
 
-      setNewFolderName(""); 
-      setIsCreating(false); 
+      setNewFolderName("");
+      setIsCreating(false);
 
       showSuccess("Folder Created Successfully!");
     } catch (err) {
@@ -138,15 +132,13 @@ const Folders: React.FC = () => {
     try {
       await updateFolder(folderId, editedName);
 
-   
       setFolders((prev) =>
         prev.map((f) => (f.id === folderId ? { ...f, name: editedName } : f)),
       );
 
       setEditingFolderId(null);
       setEditedName("");
-      setSelectedFolder(null)
-      
+      setSelectedFolder(null);
 
       showSuccess("Folder renamed successfully!");
     } catch (err) {
@@ -158,7 +150,6 @@ const Folders: React.FC = () => {
   const handleDeleteFolder = async (folderId: string) => {
     try {
       await deleteFolder(folderId);
-
 
       setFolders((prev) => prev.filter((f) => f.id !== folderId));
 
@@ -197,53 +188,51 @@ const Folders: React.FC = () => {
   };
 
   return (
-    <div className="h-55 flex flex-col gap-1">
-      {/* Header */}
+    <div className="flex flex-col flex-1 gap-4 min-h-0  ">
       <div className="flex justify-between items-center h-5  ">
-        <p className="text-(--text-heading) px-2 font-semibold text-[16px]">
+        <p className="text-(--text-heading) px-2 font-semibold text-[18px]">
           Folders
         </p>
 
         <FolderPlus
-          className="w-5 h-5  cursor-pointer text-(--text-heading)"
-          onClick={() => setIsCreating((prev) => !prev)}
+          className="w-6 h-6 ursor-pointer text-(--text-heading)"
+          onClick={() => {
+            setIsCreating((prev) => !prev);
+            setNewFolderName("");
+          }}
         />
       </div>
 
-      {/* Folder List */}
-      <div className="flex flex-col h-50 gap-3 overflow-y-auto">
-        {/* Create Folder Input */}
+      <div className="flex flex-col flex-1 gap-3 overflow-y-auto min-h-0">
         {isCreating && (
-          <div className="flex  items-center px-2 gap-15">
+          <div className="flex justify-between items-center  ">
             <input
               type="text"
               value={newFolderName}
               autoFocus
               onChange={(e) => setNewFolderName(e.target.value)}
-              className="bg-(--card-bg) text-(--text-primary) px-2 py-2 rounded border border-(--border-color) outline-none"
+              className="bg-(--card-bg) text-(--text-primary) px-2 py-1 rounded border border-(--border-color) outline-none"
               placeholder="New folder name"
             />
 
             <Plus
               onClick={handleCreateFolder}
-              className="w-5 h-5 cursor-pointer text-(--text-primary)"
+              className="w-6 h-6 cursor-pointer text-(--text-primary)"
             />
           </div>
         )}
 
-        {/* No result */}
         {searchText && filteredFolders.length === 0 && (
           <p className="text-(--text-secondary)">No folders found</p>
         )}
 
-        {/* Folder list */}
         {filteredFolders.map((folder) => {
           const isActive = selectedFolder?.id === folder.id;
 
           return (
             <div
               key={folder.id}
-              className={`group flex items-center gap-3 w-full h-auto py-1 px-2 rounded-md cursor-pointer transition-all ${
+              className={`group flex items-center gap-3 w-full h-18.5 py-1 px-1 rounded-md cursor-pointer transition-all ${
                 isActive ? "bg-(--hover-bg)" : "hover:bg-(--hover-bg)"
               }`}
               onClick={() => {
@@ -261,7 +250,7 @@ const Folders: React.FC = () => {
               {/* if clicked on the folder then icon will be different based on isActive value */}
               {isActive ? (
                 <>
-                  <FolderOpen className="w-5 h-5 text-(--text-primary)" />
+                  <FolderOpen className="w-6 h-7 text-(--text-primary)" />
                   <div className="flex justify-between w-full ">
                     {editingFolderId === folder.id ? (
                       <input
@@ -286,7 +275,7 @@ const Folders: React.FC = () => {
                     <div className="flex gap-3">
                       {editingFolderId === folder.id ? (
                         <Check
-                          className="w-5 h-5 text-green-500 cursor-pointer"
+                          className="w-6 h-6 text-green-500 cursor-pointer"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleSaveFolder(folder.id);
@@ -294,16 +283,15 @@ const Folders: React.FC = () => {
                         />
                       ) : (
                         <Pencil
-                          className="w-5 h-5 text-(--text-primary) cursor-pointer"
+                          className="w-6 h-6 text-(--text-primary) cursor-pointer"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleEditClick(folder);
                           }}
                         />
                       )}
-                      {/* <Pencil className="w-5 h-5 text-(--text-primary)" /> */}
                       <Trash2
-                        className="w-5 h-5 text-(--text-primary)"
+                        className="w-6 h-6 text-(--text-primary)"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleDeleteFolder(folder.id);
@@ -314,7 +302,7 @@ const Folders: React.FC = () => {
                 </>
               ) : (
                 <>
-                  <Folder className="w-5 h-5 text-(--text-secondary) group-hover:text-(--text-primary)" />
+                  <Folder className="w-6 h-6 text-(--text-secondary) group-hover:text-(--text-primary)" />
                   <div className="flex justify-between w-full">
                     <p
                       className={`font-semibold text-[18px] ${
