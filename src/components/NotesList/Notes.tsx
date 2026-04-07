@@ -1,95 +1,151 @@
-import React, { useEffect, useState } from "react";
-import type { Note } from "../types";
-import { getNotes } from "../../Api/notes";
+import React, { useEffect, useRef, useMemo } from "react";
 import { formatDate, getPreview } from "../utils/helpers";
 import { useApp } from "../../context/useApp";
+import type { GetNotesParams } from "../types";
+import { useNoteActions } from "../../hooks/useNoteActions";
+import { useURLState } from "../../hooks/useURLState";
+import { useNotesPagination } from "../../hooks/useNotesPagination";
 
 const Notes: React.FC = () => {
-  const [notes, setNotes] = useState<Note[]>([]);
+  const { openNote } = useNoteActions();
+  const { refreshNotes } = useApp();
   const {
     selectedFolder,
-    setSelectedNoteId,
+    selectedNoteId,
     activeView,
-    refreshNotes,
+    setSelectedNoteId,
     setActiveNoteMode,
   } = useApp();
+  
+  const { noteId, updateURL } = useURLState();
+
+  const filters: GetNotesParams = useMemo(() => {
+    if (activeView === "favorites") return { favorite: true };
+    if (activeView === "archived") return { archived: true };
+    if (activeView === "trash") return { deleted: "true" };
+    if (selectedFolder)
+      return { folderId: selectedFolder.id, deleted: "false" };
+    return {};
+  }, [activeView, selectedFolder]);
+
+
+  const { notes, loading, hasMore, fetchNextPage } = useNotesPagination(
+    filters,
+    refreshNotes,
+  );
+  const loaderRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    const fetchNotes = async () => {
-      try {
-        let res;
+    const currentRef = loaderRef.current;
+    if (!currentRef) return;
 
-        if (activeView === "favorites") {
-          res = await getNotes({ favorite: true, limit: 300 });
-        } else if (activeView === "archived") {
-          res = await getNotes({ archived: true ,limit: 300 });
-        } else if (selectedFolder) {
-          res = await getNotes({ folderId: selectedFolder.id });
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loading) {
+          fetchNextPage();
         }
+      },
+      {
+        rootMargin: "100px",
+      },
+    );
 
-        if (!res) {
-          setNotes([]);
-          return;
-        }
+    observer.observe(currentRef);
 
-        console.log("FULL:", res.data);
-
-        const data = res.data.notes || res.data.data;
-
-        setNotes(data);
-      } catch (err) {
-        console.log(err);
-      }
+    return () => {
+      observer.unobserve(currentRef);
     };
+  }, [hasMore, loading, fetchNextPage]);
 
-    fetchNotes();
-  }, [selectedFolder, activeView, refreshNotes]);
+ useEffect(() => {
+  if (!noteId) return;
+
+  setSelectedNoteId((current) => {
+    if (current === noteId) return current;
+    setActiveNoteMode("view");
+    return noteId;
+  });
+}, [noteId, setActiveNoteMode, setSelectedNoteId]);
 
   return (
-    <>
-      <div className="flex flex-col w-100 h-screen pt-7.5 pb-7.5 pl-5 pr-5 gap-5 bg-[#1C1C1C]  overflow-y-auto">
-        <h3
-          className="w-75 h-7 flex font-semibold text-(--text-primary) text-2xl"
-          style={{ fontFamily: "var(--font-primary)" }}
-        >
-          {activeView === "favorites"
-            ? "Favorites"
-            : activeView === "archived"
-              ? "Archived"
+    <div className="flex flex-col w-100 h-screen pt-7.5 pb-7.5 p-4 gap-5 bg-(--panel-bg) overflow-y-auto">
+      {/*Header */}
+      <h3
+        className="w-75 h-7 flex font-semibold text-(--text-primary) text-2xl"
+        style={{ fontFamily: "var(--font-primary)" }}
+      >
+        {activeView === "favorites"
+          ? "Favorites"
+          : activeView === "archived"
+            ? "Archived"
+            : activeView === "trash"
+              ? "Trash"
               : selectedFolder?.name || "Select Folder"}
-        </h3>
+      </h3>
 
-        {notes.map((note) => (
-          <div
-            className="flex flex-col h-24.5 w-full pl-5 gap-2.5 hover:bg-[#504e4e] cursor-pointer rounded-[3px] bg-(--folder-bg)"
-            key={note.id}
-            onClick={() => {
+      {notes.map((note) => (
+        <div
+          key={note.id}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (activeView === "trash") {
               setSelectedNoteId(note.id);
-              setActiveNoteMode("view");
-            }}
-          >
-            <p
-              className="w-67.5 h-7 font-semibold text-(--text-primary) text-[18px] "
-              style={{ fontFamily: "var(--font-primary)" }}
-            >
-              {getPreview(note.title)}
-            </p>
+              setActiveNoteMode("restore");
+              return;
+            } else if (
+              activeView === "archived" ||
+              activeView === "favorites"
+            ) {
+              setSelectedNoteId(note.id);
 
-            <div className="flex gap-4 w-67.5 h-5">
-              <span
-                className="font-semibold text-[#FFFFFF66] text-[18px] "
-                style={{ fontFamily: "var(--font-primary)" }}
-              >
-                {formatDate(note.createdAt)}
-              </span>
-              <span className="text-(--text-secondary) flex flex-wrap pt-0.5">
-                {getPreview(note.preview)}
-              </span>
-            </div>
+              updateURL({
+                note: note.id,
+                folder: null,
+                view: activeView,
+              });
+
+              setActiveNoteMode("view");
+              return;
+            }
+
+            openNote(note.id, note.folderId ?? "");
+
+            setActiveNoteMode("view");
+          }}
+          className={`flex flex-col w-full p-4 gap-2 rounded-lg cursor-pointer transition-all duration-200 border border-(--border-color) ${
+            selectedNoteId === note.id
+              ? "bg-(--hover-bg)"
+              : "bg-(--card-bg) hover:bg-(--hover-bg)"
+          }`}
+        >
+          <p className="font-semibold text-(--text-primary) text-[18px] truncate">
+            {getPreview(note.title)}
+          </p>
+
+          <div className="flex gap-4">
+            <span className="text-(--text-secondary) text-m">
+              {formatDate(note.createdAt)}
+            </span>
+            <span className="text-(--text-secondary) text-m">
+              {getPreview(note.preview)}
+            </span>
           </div>
-        ))}
-      </div>
-    </>
+        </div>
+      ))}
+
+      {!loading && notes.length === 0 && (
+        <p className="text-center text-(--text-secondary)">No notes found</p>
+      )}
+
+      <div ref={loaderRef} style={{ height: "20px" }} />
+
+      {loading && (
+        <p className="text-center text-(--text-primary)">Loading...</p>
+      )}
+      {!hasMore && notes.length > 0 && (
+        <p className="text-center text-(--text-secondary)">No more notes</p>
+      )}
+    </div>
   );
 };
 
