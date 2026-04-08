@@ -8,25 +8,40 @@ import {
   Trash,
 } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
-import type { FullNote } from "../types";
-import {  deleteNote, getNotesData, updateNote } from "../../Api/notes";
-import { formatDate } from "../utils/helpers";
-import { useApp } from "../../context/useApp";
-import CreateNoteForm from "./CreateNoteForm";
-import {  showConfirm, showError, showSuccess } from "../utils/toaster";
-import { useURLState } from "../../hooks/useURLState";
-import Restore from "./Restore";
+import type { FullNote } from "../types/dataTypes";
+import {  deleteNote, getNotesData, updateNote } from "../../api/noteAPI";
+import { buildFolderPath, buildViewPath, formatDate, parseRouteState } from "../utils/urlHelpers";
+import { useAppState } from "../../state/useAppState";
+import NoteForm from "./NoteForm";
+import {  showConfirm, showError, showSuccess } from "../utils/notifications";
+import { useLocation, useNavigate } from "react-router-dom";
+import RestoreNote from "./RestoreNote";
 
-const NotesDetails: React.FC = () => {
+const NoteView: React.FC = () => {
   const {
     selectedNoteId,
 
     activeNoteMode,
     setRefreshNotes,
     setSelectedNoteId,
-  } = useApp();
+  } = useAppState();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const routeState = parseRouteState(location.pathname);
 
-  const { updateURL } = useURLState();
+  const clearSelectedNotePath = () => {
+    if (routeState.view) {
+      navigate(buildViewPath(routeState.view));
+      return;
+    }
+
+    if (routeState.folderId) {
+      navigate(buildFolderPath(routeState.folderName ?? "folder", routeState.folderId));
+      return;
+    }
+
+    navigate("/");
+  };
 
   const [fullNote, setfullNote] = useState<FullNote | null>(null);
   const [showMenu, setShowMenu] = useState(false);
@@ -52,7 +67,7 @@ const NotesDetails: React.FC = () => {
       setfullNote((prev) =>
         prev ? { ...prev, isArchived: updatedValue } : prev,
       );
-      updateURL({ note: null });
+      clearSelectedNotePath();
       setRefreshNotes((prev) => !prev);
       setSelectedNoteId(null);
       setfullNote(null);
@@ -77,7 +92,7 @@ const NotesDetails: React.FC = () => {
         });
 
         setShowMenu(false);
-        updateURL({ note: null });
+        clearSelectedNotePath();
         setRefreshNotes((prev) => !prev);
         setSelectedNoteId(null);
         setfullNote(null);
@@ -105,7 +120,7 @@ const NotesDetails: React.FC = () => {
       setSelectedNoteId(null);
       setfullNote(null);
 
-      updateURL({ note: null });
+      clearSelectedNotePath();
       setRefreshNotes((prev) => !prev);
 
       showSuccess(
@@ -145,9 +160,9 @@ const NotesDetails: React.FC = () => {
     fetchNotes();
   }, [selectedNoteId]);
 
-  if (activeNoteMode === "create") return <CreateNoteForm />;
+  if (activeNoteMode === "create") return <NoteForm />;
   if (activeNoteMode === "restore" && fullNote && selectedNoteId)
-    return <Restore noteId={fullNote.id} noteTitle={fullNote.title} />;
+    return <RestoreNote noteId={fullNote.id} noteTitle={fullNote.title} />;
 
   if (!selectedNoteId)
     return (
@@ -263,4 +278,4 @@ const NotesDetails: React.FC = () => {
   );
 };
 
-export default NotesDetails;
+export default NoteView;

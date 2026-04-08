@@ -1,5 +1,5 @@
-import type { GetNotesParams } from "../components/types";
-import { api } from "./Axios";
+import type { GetNotesParams } from "../components/types/dataTypes";
+import { api } from "./apiClient";
 
 export const getNotes = (params: GetNotesParams) => {
   return api.get("/notes", { params });
@@ -16,6 +16,8 @@ export const createNote = (data: {
 }) => {
   return api.post("/notes", data);
 };
+
+
 export const updateNote =async (
   id: string,
   data: { isFavorite?: boolean; isArchived?: boolean; deletedAt?:string|null},
@@ -28,7 +30,7 @@ export const deleteNote =async (
   id: string,
   data: { deletedAt?: string | null }
 ) => {
-  return await api.delete(`/notes/${id}`, {data}); 
+  return await api.delete(`/notes/${id}`, {data});
 };
 
 export const restoreNote = async(id: string) => {

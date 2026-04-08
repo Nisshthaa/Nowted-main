@@ -1,10 +1,12 @@
 import { Calendar, Folder, Plus } from "lucide-react";
 import React, { useEffect, useState } from "react";
-import { useApp } from "../../context/useApp";
-import { createNote } from "../../Api/notes";
-import { showError, showSuccess } from "../utils/toaster";
+import { useAppState } from "../../state/useAppState";
+import { createNote } from "../../api/noteAPI";
+import { showError, showSuccess } from "../utils/notifications";
+import { useNavigate } from "react-router-dom";
+import { buildFolderPath } from "../utils/urlHelpers";
 
-const CreateNoteForm: React.FC = () => {
+const NoteForm: React.FC = () => {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
 
@@ -13,7 +15,8 @@ const CreateNoteForm: React.FC = () => {
     setActiveNoteMode,
     setSelectedNoteId,
     setRefreshNotes,
-  } = useApp();
+  } = useAppState();
+  const navigate = useNavigate();
 
   const handleCreate = async () => {
     if (!title || !content || !selectedFolder) {
@@ -30,6 +33,7 @@ const CreateNoteForm: React.FC = () => {
       setRefreshNotes((prev) => !prev);
       setActiveNoteMode("view");
       setSelectedNoteId(null);
+      navigate(buildFolderPath(selectedFolder.name, selectedFolder.id));
 
       showSuccess("Note Created Successfully!");
     } catch {
@@ -95,4 +99,4 @@ const CreateNoteForm: React.FC = () => {
   );
 };
 
-export default CreateNoteForm;
+export default NoteForm;
