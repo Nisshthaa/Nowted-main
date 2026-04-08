@@ -41,9 +41,12 @@ const NoteView: React.FC = () => {
   const { noteId } = parseRouteState(location.pathname);
 
   useEffect(() => {
-    if (!selectedNoteId) {
+    const init=()=>{
+        if (!selectedNoteId) {
       setFullNote(null);
     }
+    }
+    init()
   }, [selectedNoteId]);
 
   useEffect(() => {

@@ -44,8 +44,11 @@ const NoteForm: React.FC = () => {
   };
 
   useEffect(() => {
-    setTitle("");
+   const init=()=>{
+     setTitle("");
     setContent("");
+   }
+   init()
   }, [selectedFolder]);
   return (
     <div className="flex flex-col h-screen p-8 gap-8 bg-(--sidebar-bg)">
