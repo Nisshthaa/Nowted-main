@@ -44,8 +44,11 @@ const NoteForm: React.FC = () => {
   };
 
   useEffect(() => {
-    setTitle("");
+    const init=()=>{
+      setTitle("");
     setContent("");
+    }
+    init()
   }, [selectedFolder]);
 
   return (
