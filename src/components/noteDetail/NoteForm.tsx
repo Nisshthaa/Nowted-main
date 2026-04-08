@@ -1,9 +1,9 @@
 import { Calendar, Folder, Plus } from "lucide-react";
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useEffect, useState } from "react";
 import { useAppState } from "../../state/useAppState";
 import { createNote } from "../../api/noteAPI";
 import { showError, showSuccess } from "../utils/notifications";
+import { useNavigate } from "react-router-dom";
 import { buildFolderPath } from "../utils/urlHelpers";
 
 const NoteForm: React.FC = () => {
@@ -43,6 +43,10 @@ const NoteForm: React.FC = () => {
     }
   };
 
+  useEffect(() => {
+    setTitle("");
+    setContent("");
+  }, [selectedFolder]);
   return (
     <div className="flex flex-col h-screen p-8 gap-8 bg-(--sidebar-bg)">
       <input

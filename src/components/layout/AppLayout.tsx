@@ -1,3 +1,4 @@
+import React from "react";
 import FolderList from "../sidebar/FolderList";
 import SidebarHeader from "../sidebar/SidebarHeader";
 import RecentNotes from "../sidebar/RecentNotes";

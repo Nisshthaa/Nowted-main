@@ -41,6 +41,12 @@ const NoteView: React.FC = () => {
   const { noteId } = parseRouteState(location.pathname);
 
   useEffect(() => {
+    if (!selectedNoteId) {
+      setFullNote(null);
+    }
+  }, [selectedNoteId]);
+
+  useEffect(() => {
     if (!noteId) return;
     setSelectedNoteId(noteId);
     setActiveNoteMode(activeView === "trash" ? "restore" : "view");
