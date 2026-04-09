@@ -5,9 +5,11 @@ import { getRecentFolders } from "../../api/folderAPI";
 import { useAppState } from "../../state/useAppState";
 import { useNavigate } from "react-router-dom";
 import { buildFolderPath } from "../utils/urlHelpers";
+import { RecentNotesSkeleton } from "../Loader/LoadData";
 
 const RecentNotes: React.FC = () => {
   const [notes, setNotes] = useState<Note[]>([]);
+  const [loadingRecent, setLoadingRecent] = useState(false);
   const navigate = useNavigate();
 
   const {
@@ -22,10 +24,13 @@ const RecentNotes: React.FC = () => {
   useEffect(() => {
     const getRecent = async () => {
       try {
+        setLoadingRecent(true);
         const response = await getRecentFolders();
         setNotes(response.data.recentNotes);
       } catch (err) {
         console.log(err);
+      } finally {
+        setLoadingRecent(false);
       }
     };
 
@@ -40,7 +45,11 @@ const RecentNotes: React.FC = () => {
         </p>
       </div>
 
-      {notes.map((note) => {
+      {/* Show skeleton while loading */}
+      {loadingRecent && <RecentNotesSkeleton />}
+
+      {/* Show recent notes when not loading */}
+      {!loadingRecent && notes.map((note) => {
         const isActive = selectedNoteId === note.id;
 
         return (

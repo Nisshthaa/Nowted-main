@@ -19,6 +19,7 @@ import { showError, showSuccess } from "../utils/notifications";
 import type { Folder as FolderType } from "../types/dataTypes";
 import { useLocation, useNavigate } from "react-router-dom";
 import { buildFolderPath, parseRouteState } from "../utils/urlHelpers";
+import { FolderListSkeleton } from "../Loader/LoadData";
 
 const FolderList: React.FC = () => {
   const [isCreating, setIsCreating] = useState(false);
@@ -26,6 +27,7 @@ const FolderList: React.FC = () => {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [editingFolderId, setEditingFolderId] = useState<string | null>(null);
   const [editedName, setEditedName] = useState("");
+  const [loadingFolders, setLoadingFolders] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { folderId, view } = parseRouteState(location.pathname);
@@ -55,6 +57,7 @@ const FolderList: React.FC = () => {
   useEffect(() => {
     const getFolders = async () => {
       try {
+        setLoadingFolders(true);
         const response = await getFoldersData();
         const foldersData: FolderType[] = response.data.folders;
 
@@ -92,6 +95,8 @@ const FolderList: React.FC = () => {
         }
       } catch (err) {
         console.log(err);
+      } finally {
+        setLoadingFolders(false);
       }
     };
 
@@ -198,7 +203,11 @@ const FolderList: React.FC = () => {
       </div>
 
       <div className="flex flex-col flex-1 gap-3 overflow-y-auto min-h-0">
-        {isCreating && (
+        {/* Show skeleton while loading folders */}
+        {loadingFolders && <FolderListSkeleton />}
+
+        {/* Show create input when not loading and creating */}
+        {!loadingFolders && isCreating && (
           <div className="flex justify-between items-center  ">
             <input
               type="text"
@@ -216,11 +225,13 @@ const FolderList: React.FC = () => {
           </div>
         )}
 
-        {searchText && filteredFolders.length === 0 && (
+        {/* Show "No folders found" when not loading and no results */}
+        {!loadingFolders && searchText && filteredFolders.length === 0 && (
           <p className="text-(--text-secondary)">No folders found</p>
         )}
 
-        {filteredFolders.map((folder) => {
+        {/* Show folder list when not loading */}
+        {!loadingFolders && filteredFolders.map((folder) => {
           const isActive = selectedFolder?.id === folder.id;
 
           return (

@@ -16,6 +16,7 @@ import NoteForm from "./NoteForm";
 import {  showConfirm, showError, showSuccess } from "../utils/notifications";
 import { useLocation, useNavigate } from "react-router-dom";
 import RestoreNote from "./RestoreNote";
+import { NoteViewSkeleton } from "../Loader/LoadData";
 
 const NoteView: React.FC = () => {
   const {
@@ -46,6 +47,7 @@ const NoteView: React.FC = () => {
   const [fullNote, setfullNote] = useState<FullNote | null>(null);
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
+  const [loadingNote, setLoadingNote] = useState(false);
 
   useEffect(() => {
     const init = () => {
@@ -149,11 +151,14 @@ const NoteView: React.FC = () => {
 
     const fetchNotes = async () => {
       try {
+        setLoadingNote(true); 
         setfullNote(null);
         const res = await getNotesData(selectedNoteId);
         setfullNote(res.data.note);
       } catch (err) {
         console.log(err);
+      } finally {
+        setLoadingNote(false);
       }
     };
 
@@ -182,6 +187,8 @@ const NoteView: React.FC = () => {
         </div>
       </div>
     );
+
+  if (loadingNote) return <NoteViewSkeleton />;
 
   if (!fullNote)
     return <div className="p-10  text-(--text-primary)">Loading...</div>;

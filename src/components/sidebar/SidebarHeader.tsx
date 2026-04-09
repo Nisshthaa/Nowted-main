@@ -51,10 +51,10 @@ const SidebarHeader: React.FC = () => {
     <div className="flex flex-col gap-4  ">
       <div className="flex justify-between items-center  h-13 ">
         {theme === "dark" ? (
-          <img src="src/assets/logo.svg" alt="logo" className="w-30 h-15.5" />
+          <img src="/src/assets/logo.svg" alt="logo" className="w-30 h-15.5" />
         ) : (
           <img
-            src="src/assets/logo.svg"
+            src="/src/assets/logo.svg"
             alt="logo"
             className="w-30 h-15.5 filter invert sepia hue-rotate-200 saturate-500"
           />

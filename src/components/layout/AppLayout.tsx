@@ -1,7 +1,7 @@
 import FolderList from "../sidebar/FolderList";
 import SidebarHeader from "../sidebar/SidebarHeader";
 import RecentNotes from "../sidebar/RecentNotes";
-import QuickLinks from "../sidebar/More";
+import More from "../sidebar/More";
 import NotesList from "../notesList/NotesList";
 import NoteView from "../noteDetail/NoteView";
 
@@ -16,7 +16,7 @@ const AppLayout: React.FC = () => {
           <FolderList />
         </div>
         <div className="mt-auto">
-          <QuickLinks/>
+          <More/>
         </div>
       </div>
 
