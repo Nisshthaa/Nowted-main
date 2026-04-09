@@ -10,6 +10,7 @@ import { useAppState } from "../../state/useAppState";
 import type { GetNotesParams, Note } from "../types/dataTypes";
 import { useLocation, useNavigate } from "react-router-dom";
 import { getNotes } from "../../api/noteAPI";
+import { NoteListSkeleton } from "../Loader/LoadData";
 
 const NotesList: React.FC = () => {
   const { refreshNotes } = useAppState();
@@ -141,7 +142,6 @@ const NotesList: React.FC = () => {
     });
   }, [activeView, noteId, setActiveNoteMode, setSelectedNoteId]);
 
-  // Sort notes: for trash view, show recently deleted notes at top
   const sortedNotes = [...notes].sort((a, b) => {
     if (activeView === "trash" && a.deletedAt && b.deletedAt) {
       return new Date(b.deletedAt).getTime() - new Date(a.deletedAt).getTime();
@@ -216,15 +216,23 @@ const NotesList: React.FC = () => {
         </div>
       ))}
 
+      {/* Show skeleton only when loading for the first time (no notes yet) */}
+      {loading && notes.length === 0 && <NoteListSkeleton />}
+
+      {/* Show "No notes found" when not loading and no results */}
       {!loading && notes.length === 0 && (
         <p className="text-center text-(--text-secondary)">No notes found</p>
       )}
 
+      {/* Invisible loader div for infinite scroll */}
       <div ref={loaderRef} style={{ height: "20px" }} />
 
-      {loading && (
+      {/* Show "Loading..." at bottom when loading MORE notes (pagination) */}
+      {loading && notes.length > 0 && (
         <p className="text-center text-(--text-primary)">Loading...</p>
       )}
+
+      {/* Show "No more notes" when all notes are loaded */}
       {!hasMore && notes.length > 0 && (
         <p className="text-center text-(--text-secondary)">No more notes</p>
       )}

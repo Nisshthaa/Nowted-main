@@ -71,3 +71,11 @@
   border-radius: 10px;
 }
 
+.react-loading-skeleton {
+  background-color: #afb2b6 !important;
+  animation: none !important;
+}
+
+.react-loading-skeleton::after {
+  animation: none !important;
+}
