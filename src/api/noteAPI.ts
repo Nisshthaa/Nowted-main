@@ -6,8 +6,13 @@ export const getNotes = (params: GetNotesParams) => {
 };
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 export const getNotesData = (NotesId: string) => {
   return api.get(`/notes/${NotesId}`);
+=======
+export const getNotesData = (notesId: string) => {
+  return api.get(`/notes/${notesId}`);
+>>>>>>> test
 =======
 export const getNotesData = (notesId: string) => {
   return api.get(`/notes/${notesId}`);
@@ -23,6 +28,7 @@ export const createNote = (data: {
 };
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 export const updateNote =async (
   id: string,
@@ -32,10 +38,16 @@ export const updateNote = async (
   id: string,
   data: { isFavorite?: boolean; isArchived?: boolean; deletedAt?: string | null },
 >>>>>>> test
+=======
+export const updateNote = async (
+  id: string,
+  data: { isFavorite?: boolean; isArchived?: boolean; deletedAt?: string | null },
+>>>>>>> test
 ) => {
   return await api.patch(`/notes/${id}`, data);
 };
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 
 export const deleteNote =async (
@@ -47,6 +59,8 @@ export const deleteNote =async (
 
 export const restoreNote = async(id: string) => {
 =======
+=======
+>>>>>>> test
 export const deleteNote = async (
   id: string,
   data: { deletedAt?: string | null },
@@ -55,6 +69,9 @@ export const deleteNote = async (
 };
 
 export const restoreNote = async (id: string) => {
+<<<<<<< HEAD
+>>>>>>> test
+=======
 >>>>>>> test
   return await api.post(`/notes/${id}/restore`);
 };

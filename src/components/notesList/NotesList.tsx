@@ -217,18 +217,34 @@ const NotesList: React.FC = () => {
         </div>
       ))}
 
+<<<<<<< HEAD
       {loading && notes.length === 0 && <NoteListSkeleton />}
 
+=======
+      {/* Show skeleton only when loading for the first time (no notes yet) */}
+      {loading && notes.length === 0 && <NoteListSkeleton />}
+
+      {/* Show "No notes found" when not loading and no results */}
+>>>>>>> test
       {!loading && notes.length === 0 && (
         <p className="text-center text-(--text-secondary)">No notes found</p>
       )}
 
+      {/* Invisible loader div for infinite scroll */}
       <div ref={loaderRef} style={{ height: "20px" }} />
 
+<<<<<<< HEAD
+=======
+      {/* Show "Loading..." at bottom when loading MORE notes (pagination) */}
+>>>>>>> test
       {loading && notes.length > 0 && (
         <p className="text-center text-(--text-primary)">Loading...</p>
       )}
 
+<<<<<<< HEAD
+=======
+      {/* Show "No more notes" when all notes are loaded */}
+>>>>>>> test
       {!hasMore && notes.length > 0 && (
         <p className="text-center text-(--text-secondary)">No more notes</p>
       )}

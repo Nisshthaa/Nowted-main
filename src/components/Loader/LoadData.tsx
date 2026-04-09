@@ -2,17 +2,17 @@ import Skeleton from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
 
 export const NoteSkeleton = () => (
-  <div className=" flex flex-col w-full p-4 gap-2 rounded-lg border border-(--border-color) bg-(--card-bg)">
-    <Skeleton height={24} width="80%" /> 
+  <div className="flex flex-col w-full p-4 gap-2 rounded-lg border border-(--border-color) bg-(--card-bg)">
+    <Skeleton height={24} width="80%" />
     <div className="flex gap-4">
       <Skeleton height={16} width="30%" />
-      <Skeleton height={16} width="40%" /> 
+      <Skeleton height={16} width="40%" />
     </div>
   </div>
 );
 
 export const NoteListSkeleton = () => (
-  <div className="flex flex-col gap-5 bg-(--card-bg)">
+  <div className="flex flex-col gap-5">
     {Array.from({ length: 5 }).map((_, i) => (
       <NoteSkeleton key={i} />
     ))}
@@ -21,8 +21,8 @@ export const NoteListSkeleton = () => (
 
 export const FolderSkeleton = () => (
   <div className="flex items-center gap-3 w-full h-18.5 py-1 px-1 rounded-md">
-    <Skeleton height={24} width={24} circle /> 
-    <Skeleton height={24} width="60%" /> 
+    <Skeleton height={24} width={24} circle />
+    <Skeleton height={24} width="60%" />
   </div>
 );
 
@@ -43,15 +43,15 @@ export const NoteViewSkeleton = () => (
 
       <div className="flex flex-col gap-3">
         <div className="flex gap-25 max-w-md">
-          <Skeleton height={20} width="120px" /> 
-          <Skeleton height={20} width="150px" /> 
+          <Skeleton height={20} width="120px" />
+          <Skeleton height={20} width="150px" />
         </div>
 
         <hr className="border-(--border-color)" />
 
         <div className="flex gap-25 max-w-md">
-          <Skeleton height={20} width="120px" /> 
-          <Skeleton height={20} width="150px" /> 
+          <Skeleton height={20} width="120px" />
+          <Skeleton height={20} width="150px" />
         </div>
       </div>
     </div>

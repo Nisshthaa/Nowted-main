@@ -1,5 +1,6 @@
-import FolderList from "../sidebar/FolderList";
+import React from "react";
 import SidebarHeader from "../sidebar/SidebarHeader";
+import FolderList from "../sidebar/FolderList";
 import RecentNotes from "../sidebar/RecentNotes";
 <<<<<<< HEAD
 import More from "../sidebar/More";
@@ -10,6 +11,7 @@ import NotesList from "../notesList/NotesList";
 import NoteView from "../noteDetail/NoteView";
 
 const AppLayout: React.FC = () => {
+<<<<<<< HEAD
   return (
     <div className="h-screen w-full bg-(--sidebar-bg) flex">
 <<<<<<< HEAD
@@ -49,6 +51,23 @@ const AppLayout: React.FC = () => {
       </div>
     </div>
   );
+=======
+	return (
+		<div className="flex h-screen w-full overflow-hidden bg-(--bg-primary)">
+			<aside className="flex h-full w-80 flex-col gap-6 border-r border-(--border-color) bg-(--sidebar-bg) p-5">
+				<SidebarHeader />
+				<QuickLinks />
+				<FolderList />
+				<RecentNotes />
+			</aside>
+
+			<NotesList />
+			<main className="min-w-0 flex-1">
+				<NoteView />
+			</main>
+		</div>
+	);
+>>>>>>> test
 };
 
 export default AppLayout;
