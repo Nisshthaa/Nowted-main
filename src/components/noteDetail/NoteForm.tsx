@@ -9,6 +9,7 @@ import { buildFolderPath } from "../utils/urlHelpers";
 const NoteForm: React.FC = () => {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+  const navigate = useNavigate();
 
   const {
     selectedFolder,
@@ -16,37 +17,38 @@ const NoteForm: React.FC = () => {
     setSelectedNoteId,
     setRefreshNotes,
   } = useAppState();
-  const navigate = useNavigate();
 
   const handleCreate = async () => {
     if (!title || !content || !selectedFolder) {
-      return showError("Invali details!");
+      return showError("Invalid details!");
     }
 
     try {
-      await createNote({
+      const res = await createNote({
         title,
         content,
         folderId: selectedFolder.id,
       });
 
+      const createdId = res?.data?.note?.id ?? null;
+
       setRefreshNotes((prev) => !prev);
       setActiveNoteMode("view");
-      setSelectedNoteId(null);
-      navigate(buildFolderPath(selectedFolder.name, selectedFolder.id));
+      setSelectedNoteId(createdId);
 
-      showSuccess("Note Created Successfully!");
+      navigate(buildFolderPath(selectedFolder.name, selectedFolder.id, createdId));
+      showSuccess("Note created successfully!");
     } catch {
-      showError("Failed to create Note!");
+      showError("Failed to create note!");
     }
   };
 
   useEffect(() => {
-    const refreshValues = () => {
+    const init=()=>{
       setTitle("");
-      setContent("");
-    };
-    refreshValues();
+    setContent("");
+    }
+    init()
   }, [selectedFolder]);
 
   return (

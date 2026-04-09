@@ -5,8 +5,8 @@ export const getNotes = (params: GetNotesParams) => {
   return api.get("/notes", { params });
 };
 
-export const getNotesData = (NotesId: string) => {
-  return api.get(`/notes/${NotesId}`);
+export const getNotesData = (notesId: string) => {
+  return api.get(`/notes/${notesId}`);
 };
 
 export const createNote = (data: {
@@ -17,22 +17,20 @@ export const createNote = (data: {
   return api.post("/notes", data);
 };
 
-
-export const updateNote =async (
+export const updateNote = async (
   id: string,
-  data: { isFavorite?: boolean; isArchived?: boolean; deletedAt?:string|null},
+  data: { isFavorite?: boolean; isArchived?: boolean; deletedAt?: string | null },
 ) => {
   return await api.patch(`/notes/${id}`, data);
 };
 
-
-export const deleteNote =async (
+export const deleteNote = async (
   id: string,
-  data: { deletedAt?: string | null }
+  data: { deletedAt?: string | null },
 ) => {
-  return await api.delete(`/notes/${id}`, {data});
+  return await api.delete(`/notes/${id}`, { data });
 };
 
-export const restoreNote = async(id: string) => {
+export const restoreNote = async (id: string) => {
   return await api.post(`/notes/${id}/restore`);
 };
