@@ -142,7 +142,6 @@ const NotesList: React.FC = () => {
     });
   }, [activeView, noteId, setActiveNoteMode, setSelectedNoteId]);
 
-  // Sort notes: for trash view, show recently deleted notes at top
   const sortedNotes = [...notes].sort((a, b) => {
     if (activeView === "trash" && a.deletedAt && b.deletedAt) {
       return new Date(b.deletedAt).getTime() - new Date(a.deletedAt).getTime();

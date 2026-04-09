@@ -25,38 +25,88 @@ const NoteView: React.FC = () => {
     activeNoteMode,
     setRefreshNotes,
     setSelectedNoteId,
+    setActiveNoteMode,
   } = useAppState();
   const navigate = useNavigate();
   const location = useLocation();
   const routeState = parseRouteState(location.pathname);
+  const skipRestoreRouteCheck = useRef(false);
 
-  const clearSelectedNotePath = () => {
+  const getClearedSelectedNotePath = () => {
     if (routeState.view) {
-      navigate(buildViewPath(routeState.view));
-      return;
+      return buildViewPath(routeState.view);
     }
 
     if (routeState.folderId) {
-      navigate(buildFolderPath(routeState.folderName ?? "folder", routeState.folderId));
-      return;
+      return buildFolderPath(routeState.folderName ?? "folder", routeState.folderId);
     }
 
-    navigate("/");
+    return "/";
+  };
+
+  const clearSelectedNotePath = () => {
+    navigate(getClearedSelectedNotePath());
   };
 
   const [fullNote, setfullNote] = useState<FullNote | null>(null);
+  const [recentlyDeletedNote, setRecentlyDeletedNote] = useState<{
+    id: string;
+    title: string;
+  } | null>(null);
+  const [restoreAnchorPath, setRestoreAnchorPath] = useState<string | null>(null);
   const [loadingNote, setLoadingNote] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const init = () => {
-      if (!selectedNoteId) {
+      if (!selectedNoteId && activeNoteMode !== "restore") {
         setfullNote(null);
       }
     };
     init();
-  }, [selectedNoteId]);
+  }, [activeNoteMode, selectedNoteId]);
+
+  useEffect(() => {
+    if (activeNoteMode !== "restore") {
+      setRecentlyDeletedNote(null);
+      setRestoreAnchorPath(null);
+      skipRestoreRouteCheck.current = false;
+    }
+  }, [activeNoteMode]);
+
+  useEffect(() => {
+    if (
+      activeNoteMode !== "restore" ||
+      !recentlyDeletedNote ||
+      !restoreAnchorPath
+    ) {
+      return;
+    }
+
+    if (skipRestoreRouteCheck.current) {
+      if (location.pathname === restoreAnchorPath) {
+        skipRestoreRouteCheck.current = false;
+      }
+      return;
+    }
+
+    if (location.pathname !== restoreAnchorPath) {
+      setRecentlyDeletedNote(null);
+      setRestoreAnchorPath(null);
+      setActiveNoteMode("view");
+      setSelectedNoteId(null);
+    }
+  }, [
+    activeNoteMode,
+    location.pathname,
+    recentlyDeletedNote,
+    restoreAnchorPath,
+    setActiveNoteMode,
+    setSelectedNoteId,
+  ]);
+
+  //handle archive
   const handleArchive = async () => {
     if (!fullNote) return;
 
@@ -84,20 +134,33 @@ const NoteView: React.FC = () => {
     }
   };
 
+
+  //handle delete
   const handleDelete = () => {
     if (!fullNote) return;
 
     showConfirm("Move this note to Trash?", async () => {
       try {
+        const deletedNoteId = fullNote.id;
+        const deletedNoteTitle = fullNote.title;
+
         await deleteNote(fullNote.id, {
           deletedAt: new Date().toISOString(),
         });
 
         setShowMenu(false);
-        clearSelectedNotePath();
         setRefreshNotes((prev) => !prev);
+        setActiveNoteMode("restore");
         setSelectedNoteId(null);
+        const nextPath = getClearedSelectedNotePath();
+        setRestoreAnchorPath(nextPath);
+        skipRestoreRouteCheck.current = true;
         setfullNote(null);
+        setRecentlyDeletedNote({
+          id: deletedNoteId,
+          title: deletedNoteTitle,
+        });
+        navigate(nextPath);
 
         showSuccess("Moved to Trash!");
       } catch {
@@ -106,6 +169,8 @@ const NoteView: React.FC = () => {
     });
   };
 
+
+//handle favorite
   const handleFavorite = async () => {
     if (!fullNote) return;
 
@@ -166,8 +231,15 @@ const NoteView: React.FC = () => {
   }, [selectedNoteId]);
 
   if (activeNoteMode === "create") return <NoteForm />;
-  if (activeNoteMode === "restore" && fullNote && selectedNoteId)
-    return <RestoreNote noteId={fullNote.id} noteTitle={fullNote.title} />;
+
+  const restoreTarget = fullNote
+    ? { id: fullNote.id, title: fullNote.title }
+    : recentlyDeletedNote;
+
+  if (activeNoteMode === "restore" && restoreTarget)
+    return (
+      <RestoreNote noteId={restoreTarget.id} noteTitle={restoreTarget.title} />
+    );
 
   if (!selectedNoteId)
     return (
@@ -191,7 +263,7 @@ const NoteView: React.FC = () => {
   if (loadingNote) return <NoteViewSkeleton />;
 
   if (!fullNote)
-    return <NoteViewSkeleton />;
+    return <div className="p-10  text-(--text-primary)">Loading...</div>;
 
   return (
     <div className="flex flex-col h-screen p-8 gap-8 bg-(--panel-bg)">

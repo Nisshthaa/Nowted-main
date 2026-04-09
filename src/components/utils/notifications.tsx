@@ -23,12 +23,12 @@ export const showConfirm = (
   onConfirm: () => void
 ) => {
   toast((t) => (
-    <div className="flex flex-col gap-3">
-      <p className="text-sm">{message}</p>
+    <div className="flex w-50 h-20 flex-col gap-5">
+      <p className="text-m flex justify-center">{message}</p>
 
-      <div className="flex justify-end gap-2">
+      <div className="flex items-center justify-center gap-2">
         <button
-          className="px-3 py-1 rounded bg-gray-300 text-black"
+          className="px-3 py-1 rounded bg-gray-200 text-black"
           onClick={() => toast.dismiss(t.id)}
         >
           Cancel
