@@ -1,14 +1,26 @@
 import { Calendar, Folder, Plus } from "lucide-react";
+<<<<<<< HEAD
 import React, { useEffect, useState } from "react";
 import { useAppState } from "../../state/useAppState";
 import { createNote } from "../../api/noteAPI";
 import { showError, showSuccess } from "../utils/notifications";
 import { useNavigate } from "react-router-dom";
+=======
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAppState } from "../../state/useAppState";
+import { createNote } from "../../api/noteAPI";
+import { showError, showSuccess } from "../utils/notifications";
+>>>>>>> test
 import { buildFolderPath } from "../utils/urlHelpers";
 
 const NoteForm: React.FC = () => {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+<<<<<<< HEAD
+=======
+  const navigate = useNavigate();
+>>>>>>> test
 
   const {
     selectedFolder,
@@ -16,6 +28,7 @@ const NoteForm: React.FC = () => {
     setSelectedNoteId,
     setRefreshNotes,
   } = useAppState();
+<<<<<<< HEAD
   const navigate = useNavigate();
 
   const handleCreate = async () => {
@@ -25,11 +38,22 @@ const NoteForm: React.FC = () => {
 
     try {
       await createNote({
+=======
+
+  const handleCreate = async () => {
+    if (!title || !content || !selectedFolder) {
+      return showError("Invalid details!");
+    }
+
+    try {
+      const res = await createNote({
+>>>>>>> test
         title,
         content,
         folderId: selectedFolder.id,
       });
 
+<<<<<<< HEAD
       setRefreshNotes((prev) => !prev);
       setActiveNoteMode("view");
       setSelectedNoteId(null);
@@ -49,6 +73,21 @@ const NoteForm: React.FC = () => {
     refreshValues();
   }, [selectedFolder]);
 
+=======
+      const createdId = res?.data?.note?.id ?? null;
+
+      setRefreshNotes((prev) => !prev);
+      setActiveNoteMode("view");
+      setSelectedNoteId(createdId);
+
+      navigate(buildFolderPath(selectedFolder.name, selectedFolder.id, createdId));
+      showSuccess("Note created successfully!");
+    } catch {
+      showError("Failed to create note!");
+    }
+  };
+
+>>>>>>> test
   return (
     <div className="flex flex-col h-screen p-8 gap-8 bg-(--sidebar-bg)">
       <input
