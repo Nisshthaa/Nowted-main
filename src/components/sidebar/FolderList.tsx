@@ -50,7 +50,7 @@ const FolderList: React.FC = () => {
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedSearch(searchText);
-    }, 300);
+    }, 500);
     return () => clearTimeout(handler);
   }, [searchText]);
 
@@ -203,10 +203,8 @@ const FolderList: React.FC = () => {
       </div>
 
       <div className="flex flex-col flex-1 gap-3 overflow-y-auto min-h-0">
-        {/* Show skeleton while loading folders */}
         {loadingFolders && <FolderListSkeleton />}
 
-        {/* Show create input when not loading and creating */}
         {!loadingFolders && isCreating && (
           <div className="flex justify-between items-center  ">
             <input
@@ -225,12 +223,10 @@ const FolderList: React.FC = () => {
           </div>
         )}
 
-        {/* Show "No folders found" when not loading and no results */}
-        {!loadingFolders && searchText && filteredFolders.length === 0 && (
+        {!loadingFolders && debouncedSearch && filteredFolders.length === 0 && (
           <p className="text-(--text-secondary)">No folders found</p>
         )}
 
-        {/* Show folder list when not loading */}
         {!loadingFolders && filteredFolders.map((folder) => {
           const isActive = selectedFolder?.id === folder.id;
 
@@ -247,7 +243,6 @@ const FolderList: React.FC = () => {
                 navigate(buildFolderPath(folder.name, folder.id));
               }}
             >
-              {/* if clicked on the folder then icon will be different based on isActive value */}
               {isActive ? (
                 <>
                   <FolderOpen className="w-6 h-7 text-(--text-primary)" />

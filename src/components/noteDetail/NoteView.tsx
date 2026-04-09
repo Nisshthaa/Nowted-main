@@ -191,7 +191,7 @@ const NoteView: React.FC = () => {
   if (loadingNote) return <NoteViewSkeleton />;
 
   if (!fullNote)
-    return <div className="p-10  text-(--text-primary)">Loading...</div>;
+    return <NoteViewSkeleton />;
 
   return (
     <div className="flex flex-col h-screen p-8 gap-8 bg-(--panel-bg)">

@@ -22,7 +22,6 @@ const NotesList: React.FC = () => {
     setActiveNoteMode,
     setActiveView,
   } = useAppState();
-  
   const navigate = useNavigate();
   const location = useLocation();
   const { noteId } = parseRouteState(location.pathname);
@@ -143,6 +142,7 @@ const NotesList: React.FC = () => {
     });
   }, [activeView, noteId, setActiveNoteMode, setSelectedNoteId]);
 
+  // Sort notes: for trash view, show recently deleted notes at top
   const sortedNotes = [...notes].sort((a, b) => {
     if (activeView === "trash" && a.deletedAt && b.deletedAt) {
       return new Date(b.deletedAt).getTime() - new Date(a.deletedAt).getTime();
@@ -165,8 +165,10 @@ const NotesList: React.FC = () => {
               : selectedFolder?.name || "Select Folder"}
       </h3>
 
-     <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto pb-7.5">
-       {sortedNotes.map((note) => (
+      <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto pb-7.5">
+        {loading && notes.length === 0 && <NoteListSkeleton />}
+
+        {!loading && sortedNotes.map((note) => (
         <div
           key={note.id}
           onClick={(e) => {
@@ -217,38 +219,19 @@ const NotesList: React.FC = () => {
         </div>
       ))}
 
-<<<<<<< HEAD
-      {loading && notes.length === 0 && <NoteListSkeleton />}
-
-=======
-      {/* Show skeleton only when loading for the first time (no notes yet) */}
-      {loading && notes.length === 0 && <NoteListSkeleton />}
-
-      {/* Show "No notes found" when not loading and no results */}
->>>>>>> test
       {!loading && notes.length === 0 && (
         <p className="text-center text-(--text-secondary)">No notes found</p>
       )}
 
-      {/* Invisible loader div for infinite scroll */}
       <div ref={loaderRef} style={{ height: "20px" }} />
 
-<<<<<<< HEAD
-=======
-      {/* Show "Loading..." at bottom when loading MORE notes (pagination) */}
->>>>>>> test
       {loading && notes.length > 0 && (
         <p className="text-center text-(--text-primary)">Loading...</p>
       )}
-
-<<<<<<< HEAD
-=======
-      {/* Show "No more notes" when all notes are loaded */}
->>>>>>> test
       {!hasMore && notes.length > 0 && (
         <p className="text-center text-(--text-secondary)">No more notes</p>
       )}
-     </div>
+      </div>
     </div>
   );
 };
