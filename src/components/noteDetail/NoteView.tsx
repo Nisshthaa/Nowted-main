@@ -4,163 +4,85 @@ import {
   CircleEllipsis,
   FileText,
   Folder,
+  History,
   Star,
   Trash,
 } from "lucide-react";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { FullNote } from "../types/dataTypes";
-import {  deleteNote, getNotesData, updateNote } from "../../api/noteAPI";
-import { buildFolderPath, buildViewPath, formatDate, parseRouteState } from "../utils/urlHelpers";
+import { deleteNote, getNotesData, updateNote } from "../../api/noteAPI";
 import { useAppState } from "../../state/useAppState";
 import NoteForm from "./NoteForm";
-import {  showConfirm, showError, showSuccess } from "../utils/notifications";
-import { useLocation, useNavigate } from "react-router-dom";
+import { showConfirm, showError, showSuccess } from "../utils/notifications";
 import RestoreNote from "./RestoreNote";
 import { NoteViewSkeleton } from "../Loader/LoadData";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
+
+
+
 
 const NoteView: React.FC = () => {
-  const {
-    selectedNoteId,
-
-    activeNoteMode,
-    setRefreshNotes,
-    setSelectedNoteId,
-    setActiveNoteMode,
-  } = useAppState();
   const navigate = useNavigate();
   const location = useLocation();
-  const routeState = parseRouteState(location.pathname);
-  const skipRestoreRouteCheck = useRef(false);
-
-  const getClearedSelectedNotePath = () => {
-    if (routeState.view) {
-      return buildViewPath(routeState.view);
-    }
-
-    if (routeState.folderId) {
-      return buildFolderPath(routeState.folderName ?? "folder", routeState.folderId);
-    }
-
-    return "/";
-  };
-
-  const clearSelectedNotePath = () => {
-    navigate(getClearedSelectedNotePath());
-  };
+  const {
+    selectedNoteId,
+    activeNoteMode,
+    setRefreshNotes,
+    setActiveNoteMode,
+    setSelectedNoteId,
+  } = useAppState();
 
   const [fullNote, setfullNote] = useState<FullNote | null>(null);
-  const [recentlyDeletedNote, setRecentlyDeletedNote] = useState<{
-    id: string;
-    title: string;
-  } | null>(null);
-  const [restoreAnchorPath, setRestoreAnchorPath] = useState<string | null>(null);
   const [loadingNote, setLoadingNote] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => {
-    const init = () => {
-      if (!selectedNoteId && activeNoteMode !== "restore") {
-        setfullNote(null);
-      }
-    };
-    init();
-  }, [activeNoteMode, selectedNoteId]);
 
-  useEffect(() => {
-    if (activeNoteMode !== "restore") {
-      setRecentlyDeletedNote(null);
-      setRestoreAnchorPath(null);
-      skipRestoreRouteCheck.current = false;
-    }
-  }, [activeNoteMode]);
+const { noteId } = useParams();
 
-  useEffect(() => {
-    if (
-      activeNoteMode !== "restore" ||
-      !recentlyDeletedNote ||
-      !restoreAnchorPath
-    ) {
-      return;
-    }
-
-    if (skipRestoreRouteCheck.current) {
-      if (location.pathname === restoreAnchorPath) {
-        skipRestoreRouteCheck.current = false;
-      }
-      return;
-    }
-
-    if (location.pathname !== restoreAnchorPath) {
-      setRecentlyDeletedNote(null);
-      setRestoreAnchorPath(null);
-      setActiveNoteMode("view");
-      setSelectedNoteId(null);
-    }
-  }, [
-    activeNoteMode,
-    location.pathname,
-    recentlyDeletedNote,
-    restoreAnchorPath,
-    setActiveNoteMode,
-    setSelectedNoteId,
-  ]);
-
-  //handle archive
   const handleArchive = async () => {
     if (!fullNote) return;
 
     try {
       const updatedValue = !fullNote.isArchived;
-
       await updateNote(fullNote.id, { isArchived: updatedValue });
 
       setShowMenu(false);
-      setfullNote((prev) =>
-        prev ? { ...prev, isArchived: updatedValue } : prev,
-      );
-      clearSelectedNotePath();
       setRefreshNotes((prev) => !prev);
-      setSelectedNoteId(null);
+      setActiveNoteMode("view");
       setfullNote(null);
+      setSelectedNoteId(null);
 
-      if (updatedValue) {
-        showSuccess("Note Archived!");
-      } else {
-        showSuccess("Note Unarchived!");
-      }
+      // Navigate back to the view (without note ID)
+      const pathSegments = location.pathname.split("/").filter(Boolean);
+      const basePath = pathSegments.length > 2 ? `/${pathSegments[0]}/${pathSegments[1]}` : "/";
+      navigate(basePath);
+
+      showSuccess(updatedValue ? "Note Archived!" : "Note Unarchived!");
     } catch {
       showError("Failed to update archive");
     }
   };
 
-
-  //handle delete
   const handleDelete = () => {
     if (!fullNote) return;
 
     showConfirm("Move this note to Trash?", async () => {
       try {
-        const deletedNoteId = fullNote.id;
-        const deletedNoteTitle = fullNote.title;
-
         await deleteNote(fullNote.id, {
           deletedAt: new Date().toISOString(),
         });
 
         setShowMenu(false);
         setRefreshNotes((prev) => !prev);
-        setActiveNoteMode("restore");
-        setSelectedNoteId(null);
-        const nextPath = getClearedSelectedNotePath();
-        setRestoreAnchorPath(nextPath);
-        skipRestoreRouteCheck.current = true;
+        setActiveNoteMode("view");
         setfullNote(null);
-        setRecentlyDeletedNote({
-          id: deletedNoteId,
-          title: deletedNoteTitle,
-        });
-        navigate(nextPath);
+        setSelectedNoteId(null);
+
+        // Navigate back to the view (without note ID)
+        const pathSegments = location.pathname.split("/").filter(Boolean);
+        const basePath = pathSegments.length > 2 ? `/${pathSegments[0]}/${pathSegments[1]}` : "/";
+        navigate(basePath);
 
         showSuccess("Moved to Trash!");
       } catch {
@@ -169,26 +91,30 @@ const NoteView: React.FC = () => {
     });
   };
 
-
-//handle favorite
   const handleFavorite = async () => {
     if (!fullNote) return;
 
     try {
       const updatedValue = !fullNote.isFavorite;
-
       await updateNote(fullNote.id, { isFavorite: updatedValue });
 
       setShowMenu(false);
-
-      setfullNote((prev) =>
-        prev ? { ...prev, isFavorite: updatedValue } : prev,
-      );
-      setSelectedNoteId(null);
-      setfullNote(null);
-
-      clearSelectedNotePath();
       setRefreshNotes((prev) => !prev);
+      setActiveNoteMode("view");
+
+      // If removing from favorites and currently in favorites view, navigate back to favorites
+      if (!updatedValue && location.pathname.includes("/favorites")) {
+        setfullNote(null);
+        setSelectedNoteId(null);
+        navigate("/favorites");
+      } else {
+        setfullNote(null);
+        setSelectedNoteId(null);
+        // Navigate back to the view (without note ID)
+        const pathSegments = location.pathname.split("/").filter(Boolean);
+        const basePath = pathSegments.length > 2 ? `/${pathSegments[0]}/${pathSegments[1]}` : "/";
+        navigate(basePath);
+      }
 
       showSuccess(
         updatedValue ? "Added to Favorites!" : "Removed from Favorites!",
@@ -197,6 +123,15 @@ const NoteView: React.FC = () => {
       showError("Failed to update favorite");
     }
   };
+
+  const handleRestore = () => {
+    if (!fullNote) return;
+    setShowMenu(false);
+    setActiveNoteMode("restore");
+  };
+
+
+  //close the menu button
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
@@ -205,43 +140,42 @@ const NoteView: React.FC = () => {
     };
 
     document.addEventListener("mousedown", handleClickOutside);
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  useEffect(() => {
-    if (!selectedNoteId) return;
+  //to fetch the note
+ useEffect(() => {
+  const id = noteId || selectedNoteId;
 
-    const fetchNotes = async () => {
-      try {
-        setLoadingNote(true);
-        setfullNote(null);
-        const res = await getNotesData(selectedNoteId);
-        setfullNote(res.data.note);
-      } catch (err) {
-        console.log(err);
-      } finally {
-        setLoadingNote(false);
-      }
-    };
+  if (!id) return;
 
-    fetchNotes();
-  }, [selectedNoteId]);
+  const fetchNotes = async () => {
+    try {
+      setLoadingNote(true);
+      setfullNote(null);
+
+      const res = await getNotesData(id);
+      setfullNote(res.data.note);
+    } catch (err) {
+      console.log(err);
+    } finally {
+      setLoadingNote(false);
+    }
+  };
+
+  fetchNotes();
+}, [noteId, selectedNoteId]);
 
   if (activeNoteMode === "create") return <NoteForm />;
 
-  const restoreTarget = fullNote
-    ? { id: fullNote.id, title: fullNote.title }
-    : recentlyDeletedNote;
+  // Check if URL contains /create
+  if (location.pathname.includes("/create")) return <NoteForm />;
 
-  if (activeNoteMode === "restore" && restoreTarget)
-    return (
-      <RestoreNote noteId={restoreTarget.id} noteTitle={restoreTarget.title} />
-    );
+  if (activeNoteMode === "restore" && fullNote && (noteId || selectedNoteId)) {
+    return <RestoreNote noteId={fullNote.id} noteTitle={fullNote.title} />;
+  }
 
-  if (!selectedNoteId)
+  if (!noteId &&!selectedNoteId) {
     return (
       <div className="flex flex-col items-center justify-center h-screen gap-4 bg-(--sidebar-bg)">
         <FileText className="w-20 h-20 text-(--text-primary)" strokeWidth={1} />
@@ -259,11 +193,10 @@ const NoteView: React.FC = () => {
         </div>
       </div>
     );
+  }
 
   if (loadingNote) return <NoteViewSkeleton />;
-
-  if (!fullNote)
-    return <div className="p-10  text-(--text-primary)">Loading...</div>;
+  if (!fullNote) return <div className="p-10 text-(--text-primary)">No note found or still loading...</div>;
 
   return (
     <div className="flex flex-col h-screen p-8 gap-8 bg-(--panel-bg)">
@@ -284,37 +217,49 @@ const NoteView: React.FC = () => {
 
             {showMenu && (
               <div className="absolute right-0 top-10 flex flex-col w-52 bg-(--card-bg) border border-(--border-color) rounded-lg shadow-md p-3 gap-2">
-                <div
-                  className="flex items-center gap-3 p-2 rounded-md cursor-pointer hover:bg-(--hover-bg)"
-                  onClick={handleFavorite}
-                >
-                  <Star className="w-5 h-5 text-(--text-primary)" />
-                  <p className="text-(--text-primary)">
-                    {fullNote?.isFavorite
-                      ? "Remove from Favorites"
-                      : "Add to Favorites"}
-                  </p>
-                </div>
+                {!fullNote?.deletedAt ? (
+                  <>
+                    <div
+                      className="flex items-center gap-3 p-2 rounded-md cursor-pointer hover:bg-(--hover-bg)"
+                      onClick={handleFavorite}
+                    >
+                      <Star className="w-5 h-5 text-(--text-primary)" />
+                      <p className="text-(--text-primary)">
+                        {fullNote?.isFavorite
+                          ? "Remove from Favorites"
+                          : "Add to Favorites"}
+                      </p>
+                    </div>
 
-                <div
-                  className="flex items-center gap-3 p-2 rounded-md cursor-pointer hover:bg-(--hover-bg)"
-                  onClick={handleArchive}
-                >
-                  <Archive className="w-5 h-5 text-(--text-primary)" />
-                  <p className="text-(--text-primary)">
-                    {fullNote?.isArchived ? "Unarchive" : "Archive"}
-                  </p>
-                </div>
+                    <div
+                      className="flex items-center gap-3 p-2 rounded-md cursor-pointer hover:bg-(--hover-bg)"
+                      onClick={handleArchive}
+                    >
+                      <Archive className="w-5 h-5 text-(--text-primary)" />
+                      <p className="text-(--text-primary)">
+                        {fullNote?.isArchived ? "Unarchive" : "Archive"}
+                      </p>
+                    </div>
 
-                <hr className="border-(--border-color)" />
+                    <hr className="border-(--border-color)" />
 
-                <div
-                  className="flex items-center gap-3 p-2 rounded-md cursor-pointer hover:bg-(--hover-bg)"
-                  onClick={handleDelete}
-                >
-                  <Trash className="w-5 h-5 text-(--text-primary)" />
-                  <p className="text-(--text-primary)">Delete</p>
-                </div>
+                    <div
+                      className="flex items-center gap-3 p-2 rounded-md cursor-pointer hover:bg-(--hover-bg)"
+                      onClick={handleDelete}
+                    >
+                      <Trash className="w-5 h-5 text-(--text-primary)" />
+                      <p className="text-(--text-primary)">Delete</p>
+                    </div>
+                  </>
+                ) : (
+                  <div
+                    className="flex items-center gap-3 p-2 rounded-md cursor-pointer hover:bg-(--hover-bg)"
+                    onClick={handleRestore}
+                  >
+                    <History className="w-5 h-5 text-(--text-primary)" />
+                    <p className="text-(--text-primary)">Restore</p>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -327,9 +272,7 @@ const NoteView: React.FC = () => {
               <p className="text-(--text-secondary)">Date</p>
             </div>
 
-            <p className="text-(--text-primary)">
-              {formatDate(fullNote.createdAt)}
-            </p>
+            <p className="text-(--text-primary)">{new Date(fullNote.createdAt).toLocaleDateString("en-GB")}</p>
           </div>
 
           <hr className="border-(--border-color)" />

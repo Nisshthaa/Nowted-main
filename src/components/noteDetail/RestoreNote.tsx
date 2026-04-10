@@ -5,12 +5,6 @@ import { restoreNote } from "../../api/noteAPI";
 import { showError, showSuccess } from "../utils/notifications";
 import type { RestoreProps } from "../types/dataTypes";
 import { getFoldersData } from "../../api/folderAPI";
-import { useLocation, useNavigate } from "react-router-dom";
-import {
-  buildFolderPath,
-  buildViewPath,
-  parseRouteState,
-} from "../utils/urlHelpers";
 
 const RestoreNote: React.FC<RestoreProps> = ({ noteId, noteTitle }) => {
   const {
@@ -21,9 +15,6 @@ const RestoreNote: React.FC<RestoreProps> = ({ noteId, noteTitle }) => {
     setFolders,
     selectedFolder,
   } = useAppState();
-  const navigate = useNavigate();
-  const location = useLocation();
-  const routeState = parseRouteState(location.pathname);
 
   const handleRestore = async () => {
     if (!noteId) return;
@@ -40,17 +31,6 @@ const RestoreNote: React.FC<RestoreProps> = ({ noteId, noteTitle }) => {
 
       if (selectedFolder?.id) {
         setActiveView("all");
-        navigate(buildFolderPath(selectedFolder.name, selectedFolder.id, noteId));
-      } else if (routeState.folderId) {
-        setActiveView("all");
-        navigate(
-          buildFolderPath(routeState.folderName ?? "folder", routeState.folderId, noteId),
-        );
-      } else if (routeState.view && routeState.view !== "trash") {
-        setActiveView(routeState.view);
-        navigate(buildViewPath(routeState.view, noteId));
-      } else {
-        navigate("/");
       }
 
       showSuccess("Note Restored!");

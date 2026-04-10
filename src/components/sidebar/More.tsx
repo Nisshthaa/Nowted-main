@@ -2,11 +2,16 @@ import React from "react";
 import { useAppState } from "../../state/useAppState";
 import { Archive, Star, Trash } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { buildViewPath } from "../utils/urlHelpers";
 
-const QuickLinks: React.FC = () => {
-  const { setActiveView, setSelectedNoteId, setActiveNoteMode } = useAppState();
+const More: React.FC = () => {
   const navigate = useNavigate();
+
+  const {
+    setActiveView,
+    setSelectedNoteId,
+    setActiveNoteMode,
+    setSelectedFolder,
+  } = useAppState();
 
   return (
     <div className="flex flex-col w-80 h-39 gap-2 ">
@@ -21,16 +26,17 @@ const QuickLinks: React.FC = () => {
         className="flex w-80 h-39 gap-4 hover:bg-(--btn-hover) items-center p-1 rounded-[3px]"
         onClick={() => {
           setActiveView("favorites");
-          setActiveNoteMode("view");
           setSelectedNoteId(null);
+          setActiveNoteMode("view");
+          setSelectedFolder(null);
 
-          navigate(buildViewPath("favorites"));
+          navigate("/favorites");
         }}
       >
-        <Star className="w-5 h-6 text-(--text-secondary) " />
+        <Star className="w-5 h-6 text-(--text-secondary)" />
 
         <p
-          className="text-(--text-secondary) text-[18px] font-semibold  cursor-pointer"
+          className="text-(--text-secondary) text-[18px] font-semibold cursor-pointer"
           style={{ fontFamily: "var(--font-primary)" }}
         >
           Favorites
@@ -41,16 +47,17 @@ const QuickLinks: React.FC = () => {
         className="flex w-80 h-39 gap-4 hover:bg-(--btn-hover) p-1 rounded-[3px]"
         onClick={() => {
           setActiveView("trash");
-          setActiveNoteMode("restore");
           setSelectedNoteId(null);
+          setActiveNoteMode("restore");
+          setSelectedFolder(null);
 
-          navigate(buildViewPath("trash"));
+          navigate("/trash");
         }}
       >
         <Trash className="w-5 h-7 text-(--text-secondary)" />
 
         <p
-          className="text-(--text-secondary)  font-semibold text-[18px] cursor-pointer"
+          className="text-(--text-secondary) font-semibold text-[18px] cursor-pointer"
           style={{ fontFamily: "var(--font-primary)" }}
         >
           Trash
@@ -61,15 +68,17 @@ const QuickLinks: React.FC = () => {
         className="flex w-80 h-39 gap-4 hover:bg-(--btn-hover) p-1 rounded-[3px]"
         onClick={() => {
           setActiveView("archived");
-          setActiveNoteMode("view");
           setSelectedNoteId(null);
+          setActiveNoteMode("view");
+          setSelectedFolder(null);
 
-          navigate(buildViewPath("archived"));
+          navigate("/archived");
         }}
       >
         <Archive className="w-5 h-7 text-(--text-secondary)" />
+
         <p
-          className="text-(--text-secondary) font-semibold  cursor-pointer text-[18px]"
+          className="text-(--text-secondary) font-semibold cursor-pointer text-[18px]"
           style={{ fontFamily: "var(--font-primary)" }}
         >
           Archived Notes
@@ -79,4 +88,4 @@ const QuickLinks: React.FC = () => {
   );
 };
 
-export default QuickLinks;
+export default More;

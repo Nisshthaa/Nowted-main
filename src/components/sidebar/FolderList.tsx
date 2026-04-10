@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Folder,
   FolderPlus,
@@ -14,11 +14,11 @@ import {
   deleteFolder,
   updateFolder,
 } from "../../api/folderAPI";
+import { useNavigate, useLocation } from "react-router-dom";
+
 import { useAppState } from "../../state/useAppState";
 import { showError, showSuccess } from "../utils/notifications";
 import type { Folder as FolderType } from "../types/dataTypes";
-import { useLocation, useNavigate } from "react-router-dom";
-import { buildFolderPath, parseRouteState } from "../utils/urlHelpers";
 import { FolderListSkeleton } from "../Loader/LoadData";
 
 const FolderList: React.FC = () => {
@@ -28,24 +28,18 @@ const FolderList: React.FC = () => {
   const [editingFolderId, setEditingFolderId] = useState<string | null>(null);
   const [editedName, setEditedName] = useState("");
   const [loadingFolders, setLoadingFolders] = useState(false);
+
   const navigate = useNavigate();
   const location = useLocation();
-  const { folderId, view } = parseRouteState(location.pathname);
 
   const {
     setSelectedFolder,
     setActiveNoteMode,
     folders,
     setFolders,
-    setActiveView,
     setSelectedNoteId,
-    selectedFolder,
     searchText,
   } = useAppState();
-
-  const initialFolderId = useRef(folderId);
-  const initialView = useRef(view);
-  const initialSelectedFolder = useRef(selectedFolder);
 
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -54,54 +48,33 @@ const FolderList: React.FC = () => {
     return () => clearTimeout(handler);
   }, [searchText]);
 
-  useEffect(() => {
-    const getFolders = async () => {
-      try {
-        setLoadingFolders(true);
-        const response = await getFoldersData();
-        const foldersData: FolderType[] = response.data.folders;
+useEffect(() => {
+  const getFolders = async () => {
+    try {
+      setLoadingFolders(true);
+      const response = await getFoldersData();
+      const foldersData = response.data.folders;
 
-        setFolders(foldersData);
+      setFolders(foldersData);
 
-        if (initialView.current === "archived") {
-          setSelectedFolder(null);
-          setActiveView("archived");
-          return;
-        }
-
-        if (initialView.current === "favorites") {
-          setSelectedFolder(null);
-          setActiveView("favorites");
-          return;
-        }
-
-        if (initialFolderId.current) {
-          const found = foldersData.find(
-            (f) => f.id === initialFolderId.current,
-          );
-
-          if (found) {
-            setSelectedFolder(found);
-            return;
-          }
-        }
-
-        if (
-          !initialSelectedFolder.current &&
-          !initialView.current &&
-          foldersData.length > 0
-        ) {
-          setSelectedFolder(foldersData[0]);
-        }
-      } catch (err) {
-        console.log(err);
-      } finally {
-        setLoadingFolders(false);
+      if (foldersData[0]?.id) {
+        setSelectedFolder(foldersData[0]);
       }
-    };
+    } catch (err) {
+      console.log(err);
+    } finally {
+      setLoadingFolders(false);
+    }
+  };
 
-    getFolders();
-  }, [setFolders, setSelectedFolder, setActiveView]);
+  getFolders();
+}, [setFolders, setSelectedFolder]);
+
+useEffect(() => {
+  if (folders.length > 0 && location.pathname === "/") {
+    navigate(`/${folders[0].name}/${folders[0].id}`);
+  }
+}, [folders, location.pathname]);
 
   const filteredFolders =
     debouncedSearch.trim() === ""
@@ -117,10 +90,15 @@ const FolderList: React.FC = () => {
       await createFolder(newFolderName);
 
       const response = await getFoldersData();
-      setFolders(response.data.folders);
+      const updatedFolders = response.data.folders;
+
+      setFolders(updatedFolders);
 
       setNewFolderName("");
       setIsCreating(false);
+
+      const newFolder = updatedFolders[0];
+      navigate(`/${newFolder.name}/${newFolder.id}`);
 
       showSuccess("Folder Created Successfully!");
     } catch (err) {
@@ -146,7 +124,6 @@ const FolderList: React.FC = () => {
 
       setEditingFolderId(null);
       setEditedName("");
-      setSelectedFolder(null);
 
       showSuccess("Folder renamed successfully!");
     } catch (err) {
@@ -159,25 +136,20 @@ const FolderList: React.FC = () => {
     try {
       await deleteFolder(folderId);
 
-      setFolders((prev) => prev.filter((f) => f.id !== folderId));
+      const remaining = folders.filter((f) => f.id !== folderId);
+      setFolders(remaining);
 
-      if (selectedFolder?.id === folderId) {
-        const remaining = folders.filter((f) => f.id !== folderId);
-
+      if (location.pathname.includes(folderId)) {
         if (remaining.length > 0) {
           const next = remaining[0];
-
-          setSelectedFolder(next);
-
-          navigate(buildFolderPath(next.name, next.id));
+          navigate(`/${next.name}/${next.id}`);
         } else {
-          setSelectedFolder(null);
           navigate("/");
         }
-
-        setSelectedNoteId(null);
-        setActiveNoteMode("view");
       }
+
+      setSelectedNoteId(null);
+      setActiveNoteMode("view");
 
       showSuccess("Folder deleted successfully!");
     } catch (err) {
@@ -185,6 +157,8 @@ const FolderList: React.FC = () => {
       showError("Failed to delete folder");
     }
   };
+
+  if (loadingFolders) return <FolderListSkeleton />;
 
   return (
     <div className="flex flex-col flex-1 gap-4 min-h-0  ">
@@ -227,94 +201,83 @@ const FolderList: React.FC = () => {
           <p className="text-(--text-secondary)">No folders found</p>
         )}
 
-        {!loadingFolders && filteredFolders.map((folder) => {
-          const isActive = selectedFolder?.id === folder.id;
+        {!loadingFolders &&
+          filteredFolders.map((folder) => {
+            const isActive = location.pathname.includes(folder.id);
 
-          return (
-            <div
-              key={folder.id}
-              className={`group flex items-center gap-3 w-full h-18.5 py-1 px-1 rounded-md cursor-pointer transition-all ${
-                isActive ? "bg-(--hover-bg)" : "hover:bg-(--hover-bg)"
-              }`}
-              onClick={() => {
-                setSelectedFolder(folder);
-                setActiveNoteMode("view");
-                setActiveView("all");
-                navigate(buildFolderPath(folder.name, folder.id));
-              }}
-            >
-              {isActive ? (
-                <>
-                  <FolderOpen className="w-6 h-7 text-(--text-primary)" />
-                  <div className="flex justify-between w-full ">
-                    {editingFolderId === folder.id ? (
-                      <input
-                        value={editedName}
-                        autoFocus
-                        onChange={(e) => setEditedName(e.target.value)}
-                        className="bg-(--card-bg) text-(--text-primary) px-2 py-1 rounded border border-(--border-color) outline-none"
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                    ) : (
-                      <p
-                        className={`font-semibold text-[18px] ${
-                          isActive
-                            ? "text-(--text-primary)"
-                            : "text-(--text-secondary) group-hover:text-(--text-primary)"
-                        }`}
-                      >
-                        {folder.name}
-                      </p>
-                    )}
+            return (
+              <div
+                key={folder.id}
+                className={`group flex items-center gap-3 w-full h-18.5 py-1 px-1 rounded-md cursor-pointer transition-all ${
+                  isActive ? "bg-(--hover-bg)" : "hover:bg-(--hover-bg)"
+                }`}
+                onClick={() => {
+                  setSelectedFolder(folder);
+                  setSelectedNoteId(null);
+                  setActiveNoteMode("view");
 
-                    <div className="flex gap-3">
+                  navigate(`/${folder.name}/${folder.id}`);
+                }}
+              >
+                {isActive ? (
+                  <>
+                    <FolderOpen className="w-6 h-7 text-(--text-primary)" />
+                    <div className="flex justify-between w-full ">
                       {editingFolderId === folder.id ? (
-                        <Check
-                          className="w-6 h-6 text-green-500 cursor-pointer"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleSaveFolder(folder.id);
-                          }}
+                        <input
+                          value={editedName}
+                          autoFocus
+                          onChange={(e) => setEditedName(e.target.value)}
+                          className="bg-(--card-bg) text-(--text-primary) px-2 py-1 rounded border border-(--border-color) outline-none"
+                          onClick={(e) => e.stopPropagation()}
                         />
                       ) : (
-                        <Pencil
-                          className="w-6 h-6 text-(--text-primary) cursor-pointer"
+                        <p className="font-semibold text-[18px] text-(--text-primary)">
+                          {folder.name}
+                        </p>
+                      )}
+
+                      <div className="flex gap-3">
+                        {editingFolderId === folder.id ? (
+                          <Check
+                            className="w-6 h-6 text-green-500 cursor-pointer"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSaveFolder(folder.id);
+                            }}
+                          />
+                        ) : (
+                          <Pencil
+                            className="w-6 h-6 text-(--text-primary) cursor-pointer"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditClick(folder);
+                            }}
+                          />
+                        )}
+                        <Trash2
+                          className="w-6 h-6 text-(--text-primary)"
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleEditClick(folder);
+                            handleDeleteFolder(folder.id);
                           }}
                         />
-                      )}
-                      <Trash2
-                        className="w-6 h-6 text-(--text-primary)"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteFolder(folder.id);
-                        }}
-                      />
+                      </div>
                     </div>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <Folder className="w-6 h-6 text-(--text-secondary) group-hover:text-(--text-primary)" />
-                  <div className="flex justify-between w-full">
-                    <p
-                      className={`font-semibold text-[18px] ${
-                        isActive
-                          ? "text-(--text-primary)"
-                          : "text-(--text-secondary) group-hover:text-(--text-primary)"
-                      }`}
-                    >
-                      {" "}
-                      {folder.name}
-                    </p>
-                  </div>
-                </>
-              )}
-            </div>
-          );
-        })}
+                  </>
+                ) : (
+                  <>
+                    <Folder className="w-6 h-6 text-(--text-secondary) group-hover:text-(--text-primary)" />
+                    <div className="flex justify-between w-full">
+                      <p className="font-semibold text-[18px] text-(--text-secondary) group-hover:text-(--text-primary)">
+                        {folder.name}
+                      </p>
+                    </div>
+                  </>
+                )}
+              </div>
+            );
+          })}
       </div>
     </div>
   );

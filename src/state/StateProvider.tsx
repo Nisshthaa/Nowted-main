@@ -1,13 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { AppState } from "./AppState";
-import { useLocation } from "react-router-dom";
 import type { Folder, Note } from "../components/types/dataTypes";
-import { parseRouteState } from "../components/utils/urlHelpers";
-
 
 export const StateProvider = ({ children }: { children: React.ReactNode }) => {
-  const location = useLocation();
-  const { folderId, view, mode } = parseRouteState(location.pathname);
   const [selectedFolder, setSelectedFolder] = useState<Folder | null>(null);
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
 
@@ -26,47 +21,6 @@ export const StateProvider = ({ children }: { children: React.ReactNode }) => {
   >("all");
 
   const [searchText, setSearchText] = useState("");
-
-  useEffect(() => {
-    const init = () => {
-      if (view === "favorites") {
-        setActiveView("favorites");
-        setSelectedFolder(null);
-        setSelectedNoteId(null);
-        setActiveNoteMode("view");
-        return;
-      }
-
-      if (view === "archived") {
-        setActiveView("archived");
-        setSelectedFolder(null);
-        setSelectedNoteId(null);
-        setActiveNoteMode("view");
-        return;
-      }
-
-      if (view === "trash") {
-        setActiveView("trash");
-        setSelectedFolder(null);
-        setSelectedNoteId(null);
-        setActiveNoteMode("restore");
-        return;
-      }
-
-      if (mode === "create") {
-        setActiveNoteMode("create");
-      }
-
-      if (folderId) {
-        const folder = folders.find((f) => f.id === folderId);
-        if (folder) {
-          setSelectedFolder(folder);
-          setActiveView("all");
-        }
-      }
-    };
-    init();
-  }, [view, folderId, mode, folders]);
 
   return (
     <AppState.Provider

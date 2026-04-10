@@ -3,18 +3,18 @@ import React, { useEffect, useState } from "react";
 import { useAppState } from "../../state/useAppState";
 import { createNote } from "../../api/noteAPI";
 import { showError, showSuccess } from "../utils/notifications";
-import { useNavigate } from "react-router-dom";
-import { buildFolderPath } from "../utils/urlHelpers";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const NoteForm: React.FC = () => {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+
   const navigate = useNavigate();
+  const location = useLocation();
 
   const {
     selectedFolder,
     setActiveNoteMode,
-    setSelectedNoteId,
     setRefreshNotes,
   } = useAppState();
 
@@ -24,19 +24,29 @@ const NoteForm: React.FC = () => {
     }
 
     try {
-      const res = await createNote({
+      await createNote({
         title,
         content,
         folderId: selectedFolder.id,
       });
 
-      const createdId = res?.data?.note?.id ?? null;
-
       setRefreshNotes((prev) => !prev);
       setActiveNoteMode("view");
-      setSelectedNoteId(createdId);
 
-      navigate(buildFolderPath(selectedFolder.name, selectedFolder.id, createdId));
+      // Navigate back to folder or base path
+      if (location.pathname.includes("/create")) {
+        const pathSegments = location.pathname.split("/").filter(Boolean);
+        if (pathSegments[0] === "create") {
+          // Global create, navigate to root
+          navigate("/");
+        } else {
+          // Folder create, navigate back to folder
+          const folderName = pathSegments[0];
+          const folderId = pathSegments[1];
+          navigate(`/${folderName}/${folderId}`);
+        }
+      }
+
       showSuccess("Note created successfully!");
     } catch {
       showError("Failed to create note!");

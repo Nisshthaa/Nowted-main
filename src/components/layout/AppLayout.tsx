@@ -4,7 +4,12 @@ import FolderList from "../sidebar/FolderList";
 import RecentNotes from "../sidebar/RecentNotes";
 import QuickLinks from "../sidebar/More";
 import NotesList from "../notesList/NotesList";
-import NoteView from "../noteDetail/NoteView";
+
+import { Outlet } from "react-router-dom";
+
+<main className="min-w-0 flex-1">
+  <Outlet />
+</main>
 
 const AppLayout: React.FC = () => {
 	return (
@@ -18,9 +23,11 @@ const AppLayout: React.FC = () => {
 			</aside>
 
 			<NotesList />
-			<main className="min-w-0 flex-1">
-				<NoteView />
-			</main>
+			
+
+<main className="min-w-0 flex-1">
+  <Outlet />
+</main>
 		</div>
 	);
 };

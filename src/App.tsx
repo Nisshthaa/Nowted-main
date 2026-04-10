@@ -1,32 +1,38 @@
 import React from "react";
+import { Routes, Route } from "react-router-dom";
 import { StateProvider } from "./state/StateProvider";
 import { Toaster } from "react-hot-toast";
+
 import AppLayout from "./components/layout/AppLayout";
-import { Navigate, Route, Routes } from "react-router-dom";
-
-
+import NoteView from "./components/noteDetail/NoteView";
 
 const App: React.FC = () => {
   return (
     <StateProvider>
       <Routes>
-        <Route path="/" element={<AppLayout />} />
+        <Route path="/" element={<AppLayout />}>
+          <Route index element={<NoteView />} />
 
-        <Route path="/favorites" element={<AppLayout />} />
-        <Route path="/favorites/:noteId" element={<AppLayout />} />
+          <Route path="create" element={<NoteView />} />
 
-        <Route path="/archived" element={<AppLayout />} />
-        <Route path="/archived/:noteId" element={<AppLayout />} />
+          <Route path="favorites" element={<NoteView />} />
+          <Route path="favorites/:noteName/:noteId" element={<NoteView />} />
 
-        <Route path="/trash" element={<AppLayout />} />
-        <Route path="/trash/:noteId" element={<AppLayout />} />
+          <Route path="trash" element={<NoteView />} />
+          <Route path="trash/:noteName/:noteId" element={<NoteView />} />
 
-        <Route path="/folder/:folderId" element={<AppLayout />} />
-        <Route path="/folder/:folderId/create" element={<AppLayout />} />
-        <Route path="/folder/:folderId/:noteId" element={<AppLayout />} />
+          <Route path="archived" element={<NoteView />} />
+          <Route path="archived/:noteName/:noteId" element={<NoteView />} />
 
-        <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path=":folderName/:folderId" element={<NoteView />} />
+          <Route path=":folderName/:folderId/create" element={<NoteView />} />
+          <Route
+            path=":folderName/:folderId/:noteName/:noteId"
+            element={<NoteView />}
+          />
+        </Route>
       </Routes>
+
       <Toaster />
     </StateProvider>
   );

@@ -23,6 +23,7 @@ export type Note = BaseNote & {
 export type FullNote = BaseNote & {
   content: string;
   folder?: Folder;
+  deletedAt?: string | null;
 };
 
 export type DeletedFilter = "true" | "false";

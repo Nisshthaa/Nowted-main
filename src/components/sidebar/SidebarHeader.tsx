@@ -2,8 +2,7 @@ import { Plus, Search } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useAppState } from "../../state/useAppState";
 import { Sun, Moon } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import { buildFolderPath } from "../utils/urlHelpers";
+import { useLocation, useNavigate } from "react-router-dom";
 
 const SidebarHeader: React.FC = () => {
   const {
@@ -15,6 +14,7 @@ const SidebarHeader: React.FC = () => {
     setSelectedNoteId,
   } = useAppState();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [search, setSearch] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">("dark");
@@ -92,23 +92,23 @@ const SidebarHeader: React.FC = () => {
             className=" flex items-center justify-center gap-2 w-full h-10 bg-(--btn-bg) hover:bg-(--btn-hover) active:scale-[0.98] text-(--text-primary) text-[18px] font-medium rounded-md transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer"
             style={{ fontFamily: "var(--font-primary)" }}
             onClick={() => {
-              if (selectedFolder) {
-                setSelectedNoteId(null);
+              if (!selectedFolder) return;
 
-                if (activeNoteMode === "create") {
-                  setActiveNoteMode("view");
-                  navigate(buildFolderPath(selectedFolder.name, selectedFolder.id));
-                  return;
-                }
+              setSelectedNoteId(null);
 
-                setActiveNoteMode("create");
-                navigate(
-                  buildFolderPath(selectedFolder.name, selectedFolder.id, "create"),
-                );
+              const folderPath = `/${selectedFolder.name}/${selectedFolder.id}`;
+              const createPath = `${folderPath}/create`;
+
+              const onCreatePath = location.pathname === createPath;
+
+              if (activeNoteMode === "create" || onCreatePath) {
+                setActiveNoteMode("view");
+                navigate(folderPath);
                 return;
               }
 
-              setActiveNoteMode(activeNoteMode === "create" ? null : "create");
+              setActiveNoteMode("create");
+              navigate(createPath);
             }}
           >
             <Plus className="h-6 w-6" /> New Note
