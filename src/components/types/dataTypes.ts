@@ -21,6 +21,7 @@ export type Note = BaseNote & {
 };
 
 export type FullNote = BaseNote & {
+ 
   content: string;
   folder?: Folder;
   deletedAt?: string | null;
@@ -35,6 +36,7 @@ export type GetNotesParams = {
   limit?: number;
   deleted?: DeletedFilter;
   page?: number;
+  search?: string;
 };
 
 export type RestoreProps = {

@@ -19,7 +19,7 @@ export const createNote = (data: {
 
 export const updateNote = async (
   id: string,
-  data: { isFavorite?: boolean; isArchived?: boolean; deletedAt?: string | null },
+  data: { isFavorite?: boolean; isArchived?: boolean; deletedAt?: string | null,content?:string|null,title?:string|null },
 ) => {
   return await api.patch(`/notes/${id}`, data);
 };

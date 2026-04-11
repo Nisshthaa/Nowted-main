@@ -1,5 +1,4 @@
-import {
-  Archive,
+ import { Archive,
   Calendar,
   CircleEllipsis,
   FileText,
@@ -8,7 +7,7 @@ import {
   Star,
   Trash,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import type { FullNote } from "../types/dataTypes";
 import { deleteNote, getNotesData, updateNote } from "../../api/noteAPI";
 import { useAppState } from "../../state/useAppState";
@@ -17,9 +16,6 @@ import { showConfirm, showError, showSuccess } from "../utils/notifications";
 import RestoreNote from "./RestoreNote";
 import { NoteViewSkeleton } from "../Loader/LoadData";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-
-
-
 
 const NoteView: React.FC = () => {
   const navigate = useNavigate();
@@ -36,9 +32,10 @@ const NoteView: React.FC = () => {
   const [loadingNote, setLoadingNote] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const noteIdRef = useRef<string | null>(null);
 
-
-const { noteId } = useParams();
+  const { noteId } = useParams();
 
   const handleArchive = async () => {
     if (!fullNote) return;
@@ -55,7 +52,10 @@ const { noteId } = useParams();
 
       // Navigate back to the view (without note ID)
       const pathSegments = location.pathname.split("/").filter(Boolean);
-      const basePath = pathSegments.length > 2 ? `/${pathSegments[0]}/${pathSegments[1]}` : "/";
+      const basePath =
+        pathSegments.length > 2
+          ? `/${pathSegments[0]}/${pathSegments[1]}`
+          : "/";
       navigate(basePath);
 
       showSuccess(updatedValue ? "Note Archived!" : "Note Unarchived!");
@@ -81,7 +81,10 @@ const { noteId } = useParams();
 
         // Navigate back to the view (without note ID)
         const pathSegments = location.pathname.split("/").filter(Boolean);
-        const basePath = pathSegments.length > 2 ? `/${pathSegments[0]}/${pathSegments[1]}` : "/";
+        const basePath =
+          pathSegments.length > 2
+            ? `/${pathSegments[0]}/${pathSegments[1]}`
+            : "/";
         navigate(basePath);
 
         showSuccess("Moved to Trash!");
@@ -112,7 +115,10 @@ const { noteId } = useParams();
         setSelectedNoteId(null);
         // Navigate back to the view (without note ID)
         const pathSegments = location.pathname.split("/").filter(Boolean);
-        const basePath = pathSegments.length > 2 ? `/${pathSegments[0]}/${pathSegments[1]}` : "/";
+        const basePath =
+          pathSegments.length > 2
+            ? `/${pathSegments[0]}/${pathSegments[1]}`
+            : "/";
         navigate(basePath);
       }
 
@@ -130,7 +136,6 @@ const { noteId } = useParams();
     setActiveNoteMode("restore");
   };
 
-
   //close the menu button
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -144,27 +149,42 @@ const { noteId } = useParams();
   }, []);
 
   //to fetch the note
- useEffect(() => {
-  const id = noteId || selectedNoteId;
+  useEffect(() => {
+    const id = noteId || selectedNoteId;
 
-  if (!id) return;
+    if (!id) return;
 
-  const fetchNotes = async () => {
-    try {
-      setLoadingNote(true);
-      setfullNote(null);
+    const fetchNotes = async () => {
+      try {
+        setLoadingNote(true);
+        setfullNote(null);
 
-      const res = await getNotesData(id);
-      setfullNote(res.data.note);
-    } catch (err) {
-      console.log(err);
-    } finally {
-      setLoadingNote(false);
+        const res = await getNotesData(id);
+        const note = res.data.note;
+        setfullNote(note);
+        noteIdRef.current = note.id;
+      } catch (err) {
+        console.log(err);
+      } finally {
+        setLoadingNote(false);
+      }
+    };
+
+    fetchNotes();
+  }, [noteId, selectedNoteId]);
+
+const debouncedSave = useCallback((data: { title?: string; content?: string }) => {
+  if (debounceTimer.current) {
+    clearTimeout(debounceTimer.current);
+  }
+
+  debounceTimer.current = setTimeout(() => {
+    if (noteIdRef.current) {
+      updateNote(noteIdRef.current, data);
+      setRefreshNotes((prev) => !prev);
     }
-  };
-
-  fetchNotes();
-}, [noteId, selectedNoteId]);
+  }, 200);
+}, [setRefreshNotes]);
 
   if (activeNoteMode === "create") return <NoteForm />;
 
@@ -175,7 +195,7 @@ const { noteId } = useParams();
     return <RestoreNote noteId={fullNote.id} noteTitle={fullNote.title} />;
   }
 
-  if (!noteId &&!selectedNoteId) {
+  if (!noteId && !selectedNoteId) {
     return (
       <div className="flex flex-col items-center justify-center h-screen gap-4 bg-(--sidebar-bg)">
         <FileText className="w-20 h-20 text-(--text-primary)" strokeWidth={1} />
@@ -196,15 +216,28 @@ const { noteId } = useParams();
   }
 
   if (loadingNote) return <NoteViewSkeleton />;
-  if (!fullNote) return <div className="p-10 text-(--text-primary)">No note found or still loading...</div>;
+  if (!fullNote)
+    return (
+      <div className="p-10 text-(--text-primary)">
+        No note found or still loading...
+      </div>
+    );
 
   return (
     <div className="flex flex-col h-screen p-8 gap-8 bg-(--panel-bg)">
       <div className="flex flex-col gap-6">
         <div className="flex justify-between items-start">
-          <h3 className="text-(--text-primary) text-3xl font-semibold">
-            {fullNote.title}
-          </h3>
+ 
+
+          <input
+            className="text-(--text-primary) text-3xl font-semibold bg-transparent outline-none"
+            value={fullNote.title}
+            onChange={(e) => {
+              const newTitle = e.target.value;
+              setfullNote((prev) => (prev ? { ...prev, title: newTitle } : prev));
+              debouncedSave({ title: newTitle });
+            }}
+          />
 
           <div ref={menuRef} className="relative flex gap-15 justify-center">
             {fullNote.isFavorite && (
@@ -272,7 +305,9 @@ const { noteId } = useParams();
               <p className="text-(--text-secondary)">Date</p>
             </div>
 
-            <p className="text-(--text-primary)">{new Date(fullNote.createdAt).toLocaleDateString("en-GB")}</p>
+            <p className="text-(--text-primary)">
+              {new Date(fullNote.createdAt).toLocaleDateString("en-GB")}
+            </p>
           </div>
 
           <hr className="border-(--border-color)" />
@@ -290,12 +325,15 @@ const { noteId } = useParams();
         </div>
       </div>
 
-      <div
-        className="flex-1 overflow-y-auto  border border-(--border-color) rounded-lg p-6 text-(--text-primary) bg-(--sidebar-bg) text-[16px] leading-relaxed"
-        style={{ whiteSpace: "pre-wrap" }}
-      >
-        {fullNote.content}
-      </div>
+      <textarea
+        className="flex-1 w-full bg-(--sidebar-bg) text-(--text-primary) text-3xl font-semibold outline-none resize-none"
+        value={fullNote.content}
+        onChange={(e) => {
+          const newContent = e.target.value;
+          setfullNote((prev) => (prev ? { ...prev, content: newContent } : prev));
+          debouncedSave({ content: newContent });
+        }}
+      />
     </div>
   );
 };
