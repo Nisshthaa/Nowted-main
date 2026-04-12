@@ -44,19 +44,13 @@ const NoteView: React.FC = () => {
       const updatedValue = !fullNote.isArchived;
       await updateNote(fullNote.id, { isArchived: updatedValue });
 
+      setfullNote((prev) =>
+        prev ? { ...prev, isArchived: updatedValue } : prev
+      );
+
       setShowMenu(false);
       setRefreshNotes((prev) => !prev);
       setActiveNoteMode("view");
-      setfullNote(null);
-      setSelectedNoteId(null);
-
-      // Navigate back to the view (without note ID)
-      const pathSegments = location.pathname.split("/").filter(Boolean);
-      const basePath =
-        pathSegments.length > 2
-          ? `/${pathSegments[0]}/${pathSegments[1]}`
-          : "/";
-      navigate(basePath);
 
       showSuccess(updatedValue ? "Note Archived!" : "Note Unarchived!");
     } catch {
@@ -69,23 +63,19 @@ const NoteView: React.FC = () => {
 
     showConfirm("Move this note to Trash?", async () => {
       try {
+        const deletedAtTime = new Date().toISOString();
         await deleteNote(fullNote.id, {
-          deletedAt: new Date().toISOString(),
+          deletedAt: deletedAtTime,
         });
+
+        setfullNote((prev) =>
+          prev ? { ...prev, deletedAt: deletedAtTime } : prev
+        );
 
         setShowMenu(false);
         setRefreshNotes((prev) => !prev);
-        setActiveNoteMode("view");
-        setfullNote(null);
-        setSelectedNoteId(null);
 
-        // Navigate back to the view (without note ID)
-        const pathSegments = location.pathname.split("/").filter(Boolean);
-        const basePath =
-          pathSegments.length > 2
-            ? `/${pathSegments[0]}/${pathSegments[1]}`
-            : "/";
-        navigate(basePath);
+        setActiveNoteMode("restore");
 
         showSuccess("Moved to Trash!");
       } catch {
@@ -101,25 +91,15 @@ const NoteView: React.FC = () => {
       const updatedValue = !fullNote.isFavorite;
       await updateNote(fullNote.id, { isFavorite: updatedValue });
 
+      setfullNote((prev) => (prev ? { ...prev, isFavorite: updatedValue } : prev));
+
       setShowMenu(false);
       setRefreshNotes((prev) => !prev);
       setActiveNoteMode("view");
 
-      // If removing from favorites and currently in favorites view, navigate back to favorites
       if (!updatedValue && location.pathname.includes("/favorites")) {
-        setfullNote(null);
         setSelectedNoteId(null);
         navigate("/favorites");
-      } else {
-        setfullNote(null);
-        setSelectedNoteId(null);
-        // Navigate back to the view (without note ID)
-        const pathSegments = location.pathname.split("/").filter(Boolean);
-        const basePath =
-          pathSegments.length > 2
-            ? `/${pathSegments[0]}/${pathSegments[1]}`
-            : "/";
-        navigate(basePath);
       }
 
       showSuccess(
@@ -136,7 +116,6 @@ const NoteView: React.FC = () => {
     setActiveNoteMode("restore");
   };
 
-  //close the menu button
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
@@ -148,7 +127,6 @@ const NoteView: React.FC = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  //to fetch the note
   useEffect(() => {
     const id = noteId || selectedNoteId;
 
@@ -183,12 +161,11 @@ const debouncedSave = useCallback((data: { title?: string; content?: string }) =
       updateNote(noteIdRef.current, data);
       setRefreshNotes((prev) => !prev);
     }
-  }, 200);
+  }, 300);
 }, [setRefreshNotes]);
 
   if (activeNoteMode === "create") return <NoteForm />;
 
-  // Check if URL contains /create
   if (location.pathname.includes("/create")) return <NoteForm />;
 
   if (activeNoteMode === "restore" && fullNote && (noteId || selectedNoteId)) {
@@ -239,9 +216,9 @@ const debouncedSave = useCallback((data: { title?: string; content?: string }) =
             }}
           />
 
-          <div ref={menuRef} className="relative flex gap-15 justify-center">
+          <div ref={menuRef} className="relative flex gap-15 items-center justify-center">
             {fullNote.isFavorite && (
-              <Star className="w-6 h-6 text-yellow-400 fill-yellow-400" />
+              <Star className="w-8 h-8 text-yellow-400 fill-yellow-400" />
             )}
             <CircleEllipsis
               className="text-(--text-secondary) w-9 h-9 cursor-pointer"
@@ -249,15 +226,15 @@ const debouncedSave = useCallback((data: { title?: string; content?: string }) =
             />
 
             {showMenu && (
-              <div className="absolute right-0 top-10 flex flex-col w-52 bg-(--card-bg) border border-(--border-color) rounded-lg shadow-md p-3 gap-2">
+              <div className="absolute right-0 top-10 flex flex-col w-64 bg-(--card-bg) border border-(--border-color) rounded-lg shadow-md p-3 gap-2">
                 {!fullNote?.deletedAt ? (
                   <>
                     <div
                       className="flex items-center gap-3 p-2 rounded-md cursor-pointer hover:bg-(--hover-bg)"
                       onClick={handleFavorite}
                     >
-                      <Star className="w-5 h-5 text-(--text-primary)" />
-                      <p className="text-(--text-primary)">
+                      <Star className="w-5 h-5 text-(--text-primary) flex-shrink-0" />
+                      <p className="text-(--text-primary) whitespace-nowrap">
                         {fullNote?.isFavorite
                           ? "Remove from Favorites"
                           : "Add to Favorites"}
@@ -268,8 +245,8 @@ const debouncedSave = useCallback((data: { title?: string; content?: string }) =
                       className="flex items-center gap-3 p-2 rounded-md cursor-pointer hover:bg-(--hover-bg)"
                       onClick={handleArchive}
                     >
-                      <Archive className="w-5 h-5 text-(--text-primary)" />
-                      <p className="text-(--text-primary)">
+                      <Archive className="w-5 h-5 text-(--text-primary) flex-shrink-0" />
+                      <p className="text-(--text-primary) whitespace-nowrap">
                         {fullNote?.isArchived ? "Unarchive" : "Archive"}
                       </p>
                     </div>
@@ -280,8 +257,8 @@ const debouncedSave = useCallback((data: { title?: string; content?: string }) =
                       className="flex items-center gap-3 p-2 rounded-md cursor-pointer hover:bg-(--hover-bg)"
                       onClick={handleDelete}
                     >
-                      <Trash className="w-5 h-5 text-(--text-primary)" />
-                      <p className="text-(--text-primary)">Delete</p>
+                      <Trash className="w-5 h-5 text-(--text-primary) flex-shrink-0" />
+                      <p className="text-(--text-primary) whitespace-nowrap">Delete</p>
                     </div>
                   </>
                 ) : (
@@ -289,8 +266,8 @@ const debouncedSave = useCallback((data: { title?: string; content?: string }) =
                     className="flex items-center gap-3 p-2 rounded-md cursor-pointer hover:bg-(--hover-bg)"
                     onClick={handleRestore}
                   >
-                    <History className="w-5 h-5 text-(--text-primary)" />
-                    <p className="text-(--text-primary)">Restore</p>
+                    <History className="w-5 h-5 text-(--text-primary) flex-shrink-0" />
+                    <p className="text-(--text-primary) whitespace-nowrap">Restore</p>
                   </div>
                 )}
               </div>
@@ -326,7 +303,7 @@ const debouncedSave = useCallback((data: { title?: string; content?: string }) =
       </div>
 
       <textarea
-        className="flex-1 w-full bg-(--sidebar-bg) text-(--text-primary) text-3xl font-semibold outline-none resize-none"
+        className="flex-1 w-full bg-(--sidebar-bg) text-(--text-primary) text-s  outline-none resize-none"
         value={fullNote.content}
         onChange={(e) => {
           const newContent = e.target.value;
@@ -339,3 +316,6 @@ const debouncedSave = useCallback((data: { title?: string; content?: string }) =
 };
 
 export default NoteView;
+
+
+

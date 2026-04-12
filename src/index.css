@@ -6,10 +6,10 @@
 
 :root {
 
-  --bg: #F3F4F6;           
-  --sidebar-bg: #f8f8f8;  
-  --panel-bg: #fffdfc;     
-  --card-bg: #FFFFFF;      
+  --bg: #F3F4F6;
+  --sidebar-bg: #f8f8f8;
+  --panel-bg: #fffdfc;
+  --card-bg: #FFFFFF;
 
 
   --text-primary: #111827;
@@ -27,18 +27,20 @@
 
 
   --border-color: #E5E7EB;
+  --skeleton-base: #E5E7EB;
+  --skeleton-highlight: #F3F4F6;
 }
 
 
 
 .dark {
- 
-  --bg: #111111;             
-  --sidebar-bg: #171717;    
- 
-    --panel-bg: #1C1C1C;       
 
-  --card-bg: #262626;      
+  --bg: #111111;
+  --sidebar-bg: #171717;
+
+    --panel-bg: #1C1C1C;
+
+  --card-bg: #262626;
 
 
   --text-primary: #FFFFFF;
@@ -54,6 +56,8 @@
   --accent-hover: #4338CA;
 
   --border-color: #2A2A2A;
+  --skeleton-base: #797676;
+  --skeleton-highlight: #626262;
 }
 
 ::-webkit-scrollbar {
@@ -64,10 +68,7 @@
   border-radius: 10px;
 }
 
-.react-loading-skeleton {
-  background-color: #d6d7d9 !important;
-  animation: none !important;
-}
+
 
 .react-loading-skeleton::after {
   animation: none !important;

@@ -22,32 +22,33 @@ export const StateProvider = ({ children }: { children: React.ReactNode }) => {
 
   const [searchText, setSearchText] = useState("");
 
+  const [searchResults, setSearchResults] = useState<Note[]>([]);
+
+  const [showSearchDropdown, setShowSearchDropdown] = useState(false);
+
   return (
     <AppState.Provider
       value={{
         selectedFolder,
         setSelectedFolder,
-
         selectedNoteId,
         setSelectedNoteId,
-
         activeNoteMode,
         setActiveNoteMode,
-
         refreshNotes,
         setRefreshNotes,
-
         activeView,
         setActiveView,
-
         folders,
         setFolders,
-
         notes,
         setNotes,
-
         searchText,
         setSearchText,
+        searchResults,
+        setSearchResults,
+        showSearchDropdown,
+        setShowSearchDropdown,
       }}
     >
       {children}

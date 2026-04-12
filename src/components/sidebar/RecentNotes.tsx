@@ -20,6 +20,7 @@ const RecentNotes: React.FC = () => {
     setActiveNoteMode,
   } = useAppState();
 
+  //fetch recent notes
   useEffect(() => {
     const getRecent = async () => {
       try {
@@ -35,6 +36,7 @@ const RecentNotes: React.FC = () => {
 
     getRecent();
   }, []);
+  
 
   return (
     <div className="flex flex-col gap-2">

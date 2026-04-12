@@ -1,16 +1,19 @@
-import { Calendar, Folder, Plus } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import { Calendar, Folder } from "lucide-react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useAppState } from "../../state/useAppState";
-import { createNote } from "../../api/noteAPI";
+import { createNote, updateNote } from "../../api/noteAPI";
 import { showError, showSuccess } from "../utils/notifications";
 import { useNavigate, useLocation } from "react-router-dom";
 
 const NoteForm: React.FC = () => {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
   const navigate = useNavigate();
   const location = useLocation();
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const noteIdRef = useRef<string | null>(null);
 
   const {
     selectedFolder,
@@ -18,48 +21,96 @@ const NoteForm: React.FC = () => {
     setRefreshNotes,
   } = useAppState();
 
-  const handleCreate = async () => {
-    if (!title || !content || !selectedFolder) {
-      return showError("Invalid details!");
-    }
-
-    try {
-      await createNote({
-        title,
-        content,
-        folderId: selectedFolder.id,
-      });
-
-      setRefreshNotes((prev) => !prev);
-      setActiveNoteMode("view");
-
-      // Navigate back to folder or base path
-      if (location.pathname.includes("/create")) {
-        const pathSegments = location.pathname.split("/").filter(Boolean);
-        if (pathSegments[0] === "create") {
-          // Global create, navigate to root
-          navigate("/");
-        } else {
-          // Folder create, navigate back to folder
-          const folderName = pathSegments[0];
-          const folderId = pathSegments[1];
-          navigate(`/${folderName}/${folderId}`);
-        }
+  
+  const debouncedSave = useCallback(
+    async (titleValue: string, contentValue: string) => {
+      if (debounceTimer.current) {
+        clearTimeout(debounceTimer.current);
       }
 
-      showSuccess("Note created successfully!");
-    } catch {
-      showError("Failed to create note!");
-    }
+      if (!titleValue.trim() || !contentValue.trim() || !selectedFolder) {
+        return;
+      }
+
+      debounceTimer.current = setTimeout(async () => {
+        try {
+          setIsSaving(true);
+
+         
+          if (!noteIdRef.current) {
+            const res = await createNote({
+              title: titleValue,
+              content: contentValue,
+              folderId: selectedFolder.id,
+            });
+            const newNoteId = res.data.id;
+            noteIdRef.current = newNoteId;
+
+            setRefreshNotes((prev) => !prev);
+            showSuccess("Note created successfully!");
+
+            
+            setTimeout(() => {
+              if (location.pathname.includes("/create")) {
+                const pathSegments = location.pathname.split("/").filter(Boolean);
+                if (pathSegments[0] === "create") {
+                  navigate("/");
+                } else {
+                  const folderName = pathSegments[0];
+                  const folderId = pathSegments[1];
+                  navigate(`/${folderName}/${folderId}/${encodeURIComponent(titleValue)}/${newNoteId}`);
+                }
+              }
+              setActiveNoteMode("view");
+            }, 300);
+          } else {
+           
+            await updateNote(noteIdRef.current, {
+              title: titleValue,
+              content: contentValue,
+            });
+            setRefreshNotes((prev) => !prev);
+          }
+        } catch (err) {
+          console.error(err);
+          showError("Failed to save note!");
+        } finally {
+          setIsSaving(false);
+        }
+      }, 500); 
+    },
+    [selectedFolder, setRefreshNotes, setActiveNoteMode, navigate, location.pathname]
+  );
+
+  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newTitle = e.target.value;
+    setTitle(newTitle);
+    debouncedSave(newTitle, content);
+  };
+
+  const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newContent = e.target.value;
+    setContent(newContent);
+    debouncedSave(title, newContent);
   };
 
   useEffect(() => {
-    const init=()=>{
+    const init = () => {
       setTitle("");
-    setContent("");
-    }
-    init()
+      setContent("");
+      noteIdRef.current = null;
+    };
+    init();
   }, [selectedFolder]);
+
+  
+  useEffect(() => {
+    return () => {
+      if (debounceTimer.current) {
+        clearTimeout(debounceTimer.current);
+      }
+    };
+  }, []);
 
   return (
     <div className="flex flex-col h-screen p-8 gap-8 bg-(--sidebar-bg)">
@@ -67,7 +118,7 @@ const NoteForm: React.FC = () => {
         className="text-3xl font-semibold text-(--text-primary) bg-transparent outline-none border-b border-(--border-color) pb-2"
         placeholder="Enter title..."
         value={title}
-        onChange={(e) => setTitle(e.target.value)}
+        onChange={handleTitleChange}
       />
 
       <div className="flex flex-col gap-3">
@@ -92,21 +143,25 @@ const NoteForm: React.FC = () => {
 
           <p className="text-(--text-primary)">{selectedFolder?.name}</p>
         </div>
+
+        {isSaving && (
+          <div className="flex items-center gap-3 p-4 rounded-lg bg-(--card-bg) border border-(--border-color)">
+            <div className="flex gap-1.5">
+              <div className="w-3 h-3 bg-(--accent) rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+              <div className="w-3 h-3 bg-(--accent) rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+              <div className="w-3 h-3 bg-(--accent) rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+            </div>
+            <p className="text-(--text-primary) text-base font-semibold">Saving...</p>
+          </div>
+        )}
       </div>
 
       <textarea
         className="flex-1 bg-(--card-bg) border border-(--border-color) rounded-lg p-5 text-(--text-primary) outline-none resize-none"
         value={content}
-        onChange={(e) => setContent(e.target.value)}
+        onChange={handleContentChange}
         placeholder="Write your note..."
       />
-
-      <button
-        className="flex items-center justify-center gap-2 w-40 h-10 bg-(--btn-bg) hover:bg-(--btn-hover) text-(--text-primary) rounded-md transition-all cursor-pointer"
-        onClick={handleCreate}
-      >
-        <Plus className="w-5 h-5" /> Add Note
-      </button>
     </div>
   );
 };

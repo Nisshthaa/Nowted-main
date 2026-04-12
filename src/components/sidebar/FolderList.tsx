@@ -8,12 +8,14 @@ import {
   Pencil,
   Check,
 } from "lucide-react";
+
 import {
   getFoldersData,
   createFolder,
   deleteFolder,
   updateFolder,
 } from "../../api/folderAPI";
+
 import { useNavigate, useLocation } from "react-router-dom";
 
 import { useAppState } from "../../state/useAppState";
@@ -24,7 +26,6 @@ import { FolderListSkeleton } from "../Loader/LoadData";
 const FolderList: React.FC = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [editingFolderId, setEditingFolderId] = useState<string | null>(null);
   const [editedName, setEditedName] = useState("");
   const [loadingFolders, setLoadingFolders] = useState(false);
@@ -38,51 +39,40 @@ const FolderList: React.FC = () => {
     folders,
     setFolders,
     setSelectedNoteId,
-    searchText,
   } = useAppState();
 
   useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedSearch(searchText);
-    }, 500);
-    return () => clearTimeout(handler);
-  }, [searchText]);
+    const getFolders = async () => {
+      try {
+        setLoadingFolders(true);
+        const response = await getFoldersData();
+        const foldersData = response.data.folders;
 
-useEffect(() => {
-  const getFolders = async () => {
-    try {
-      setLoadingFolders(true);
-      const response = await getFoldersData();
-      const foldersData = response.data.folders;
+        setFolders(foldersData);
 
-      setFolders(foldersData);
-
-      if (foldersData[0]?.id) {
-        setSelectedFolder(foldersData[0]);
+        if (foldersData[0]?.id) {
+          setSelectedFolder(foldersData[0]);
+        }
+      } catch (err) {
+        console.log(err);
+      } finally {
+        setLoadingFolders(false);
       }
-    } catch (err) {
-      console.log(err);
-    } finally {
-      setLoadingFolders(false);
+    };
+
+    getFolders();
+  }, [setFolders, setSelectedFolder]);
+
+  //default url
+  useEffect(() => {
+    if (folders.length > 0 && location.pathname === "/") {
+      navigate(`/${encodeURIComponent(folders[0].name)}/${folders[0].id}`);
     }
-  };
+  }, [folders, location.pathname, navigate]);
 
-  getFolders();
-}, [setFolders, setSelectedFolder]);
+  const filteredFolders = folders;
 
-useEffect(() => {
-  if (folders.length > 0 && location.pathname === "/") {
-    navigate(`/${folders[0].name}/${folders[0].id}`);
-  }
-}, [folders, location.pathname]);
-
-  const filteredFolders =
-    debouncedSearch.trim() === ""
-      ? folders
-      : folders.filter((folder) =>
-          folder.name.toLowerCase().includes(debouncedSearch.toLowerCase()),
-        );
-
+  //folder creation handler
   const handleCreateFolder = async () => {
     if (!newFolderName.trim()) return;
 
@@ -98,7 +88,7 @@ useEffect(() => {
       setIsCreating(false);
 
       const newFolder = updatedFolders[0];
-      navigate(`/${newFolder.name}/${newFolder.id}`);
+      navigate(`/${encodeURIComponent(newFolder.name)}/${newFolder.id}`);
 
       showSuccess("Folder Created Successfully!");
     } catch (err) {
@@ -107,11 +97,13 @@ useEffect(() => {
     }
   };
 
+  //folder rename handler
   const handleEditClick = (folder: FolderType) => {
     setEditingFolderId(folder.id);
     setEditedName(folder.name);
   };
 
+  //save changes
   const handleSaveFolder = async (folderId: string) => {
     if (!editedName.trim()) return;
 
@@ -132,6 +124,7 @@ useEffect(() => {
     }
   };
 
+  //delete handler
   const handleDeleteFolder = async (folderId: string) => {
     try {
       await deleteFolder(folderId);
@@ -142,7 +135,7 @@ useEffect(() => {
       if (location.pathname.includes(folderId)) {
         if (remaining.length > 0) {
           const next = remaining[0];
-          navigate(`/${next.name}/${next.id}`);
+          navigate(`/${encodeURIComponent(next.name)}/${next.id}`);
         } else {
           navigate("/");
         }
@@ -158,7 +151,7 @@ useEffect(() => {
     }
   };
 
-  if (loadingFolders) return <FolderListSkeleton />;
+  if (loadingFolders) return <FolderListSkeleton count={Math.max(folders.length, 3)} />;
 
   return (
     <div className="flex flex-col flex-1 gap-4 min-h-0  ">
@@ -177,7 +170,7 @@ useEffect(() => {
       </div>
 
       <div className="flex flex-col flex-1 gap-3 overflow-y-auto min-h-0">
-        {loadingFolders && <FolderListSkeleton />}
+        {loadingFolders && <FolderListSkeleton count={Math.max(folders.length, 3)} />}
 
         {!loadingFolders && isCreating && (
           <div className="flex justify-between items-center  ">
@@ -197,10 +190,6 @@ useEffect(() => {
           </div>
         )}
 
-        {!loadingFolders && debouncedSearch && filteredFolders.length === 0 && (
-          <p className="text-(--text-secondary)">No folders found</p>
-        )}
-
         {!loadingFolders &&
           filteredFolders.map((folder) => {
             const isActive = location.pathname.includes(folder.id);
@@ -216,7 +205,7 @@ useEffect(() => {
                   setSelectedNoteId(null);
                   setActiveNoteMode("view");
 
-                  navigate(`/${folder.name}/${folder.id}`);
+                  navigate(`/${encodeURIComponent(folder.name)}/${folder.id}`);
                 }}
               >
                 {isActive ? (

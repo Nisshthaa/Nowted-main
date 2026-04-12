@@ -1,6 +1,5 @@
 import toast from "react-hot-toast";
 
-// Success
 export const showSuccess = (message: string) => {
   toast.success(message, {
     position: "top-center",
@@ -8,7 +7,6 @@ export const showSuccess = (message: string) => {
   });
 };
 
-//  Error
 export const showError = (message: string) => {
   toast.error(message, {
     position: "top-center",
@@ -17,7 +15,6 @@ export const showError = (message: string) => {
   });
 };
 
-//  Confirm
 export const showConfirm = (
   message: string,
   onConfirm: () => void

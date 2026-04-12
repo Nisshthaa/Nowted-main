@@ -16,6 +16,8 @@ const NotesList: React.FC = () => {
     setSelectedFolder,
     setActiveNoteMode,
     folders,
+    setSearchResults,
+    setShowSearchDropdown,
   } = useAppState();
 
   const [notes, setNotes] = useState<Note[]>([]);
@@ -31,6 +33,7 @@ const NotesList: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+//pagination
   useEffect(() => {
     loadingRef.current = loading;
   }, [loading]);
@@ -39,6 +42,7 @@ const NotesList: React.FC = () => {
     hasMoreRef.current = hasMore;
   }, [hasMore]);
 
+  //debouncing 
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedQuery(searchText.trim().toLowerCase());
@@ -47,31 +51,31 @@ const NotesList: React.FC = () => {
     return () => clearTimeout(timer);
   }, [searchText]);
 
+  
   useEffect(() => {
-    const fetchNotes = async () => {
+    const fetchSearchResults = async () => {
       if (!debouncedQuery.trim()) {
+        setSearchResults([]);
+        setShowSearchDropdown(false);
         return;
       }
 
-      setLoading(true);
       try {
         const res = await getNotes({ search: debouncedQuery });
-        const data = res?.data?.notes ?? res?.data?.data ?? [];
-        setNotes(data);
-        setHasMore(false);
+        const data = res.data.notes ?? [];
+        setSearchResults(data);
+        setShowSearchDropdown(true);
       } catch (err) {
         console.error(err);
-        setNotes([]);
-        setHasMore(false);
-      } finally {
-        setLoading(false);
+        setSearchResults([]);
       }
     };
 
-    fetchNotes();
+    fetchSearchResults();
   }, [debouncedQuery]);
 
-
+  
+//show notes based on view
   useEffect(() => {
     if (location.pathname === "/favorites") {
       setActiveView("favorites");
@@ -95,6 +99,7 @@ const NotesList: React.FC = () => {
     }
   }, [location.pathname, folders, setActiveView, setSelectedFolder]);
 
+//sending params to url
   const filters: GetNotesParams = (() => {
     if (activeView === "favorites") {
       return { favorite: true };
@@ -126,7 +131,7 @@ const NotesList: React.FC = () => {
           limit,
         });
 
-        const data = res.data.notes || res.data.data || [];
+        const data = res.data.notes ?? [];
 
         if (!isActive) return;
 
@@ -173,7 +178,7 @@ const NotesList: React.FC = () => {
             limit,
           });
 
-          const data = res.data.notes || res.data.data || [];
+          const data = res.data.notes ?? [];
 
           setNotes((prev) => [...prev, ...data]);
 
@@ -207,18 +212,20 @@ const NotesList: React.FC = () => {
 
   return (
     <div className="flex flex-col w-100 h-screen p-4 gap-5 bg-(--panel-bg)">
-      <h3 className="sticky top-0 z-10 w-full min-w-0 shrink-0 bg-(--panel-bg) py-1 font-semibold text-(--text-primary) text-2xl line-clamp-2">
-        {activeView === "favorites"
-          ? "Favorites"
-          : activeView === "archived"
-            ? "Archived"
-            : activeView === "trash"
-              ? "Trash"
-              : selectedFolder?.name || "Select Folder"}
-      </h3>
+      <div className="sticky top-0 z-20 bg-(--panel-bg)">
+        <h3 className="w-full min-w-0 shrink-0 py-1 font-semibold text-(--text-primary) text-2xl line-clamp-2">
+          {activeView === "favorites"
+            ? "Favorites"
+            : activeView === "archived"
+              ? "Archived"
+              : activeView === "trash"
+                ? "Trash"
+                : selectedFolder?.name || "Select Folder"}
+        </h3>
+      </div>
 
       <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto pb-7.5">
-        {loading && notes.length === 0 && <NoteListSkeleton />}
+        {loading && notes.length === 0 && <NoteListSkeleton count={limit} />}
 
         {!loading &&
           displayedNotes.map((note) => (
