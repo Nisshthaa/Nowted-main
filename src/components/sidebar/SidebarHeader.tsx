@@ -4,6 +4,7 @@ import { useAppState } from "../../state/useAppState";
 import { Sun, Moon } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import type { Note } from "../types/dataTypes";
+import logo from "/logo.svg";
 
 const SidebarHeader: React.FC = () => {
 
@@ -83,13 +84,12 @@ const SidebarHeader: React.FC = () => {
     <div className="flex flex-col gap-4  ">
       <div className="flex justify-between items-center  h-13 ">
         {theme === "dark" ? (
-          <img src="/src/assets/logo.svg" alt="logo" className="w-30 h-15.5" />
+         
+
+<img  className="w-30 h-15.5" src={logo} />
         ) : (
-          <img
-            src="/src/assets/logo.svg"
-            alt="logo"
-            className="w-30 h-15.5 filter invert sepia hue-rotate-200 saturate-500"
-          />
+          <img   className="w-30 h-15.5 filter invert sepia hue-rotate-200 saturate-500"src={logo} />
+        
         )}
         <div className="flex gap-5 justify-center">
           <div onClick={toggleTheme} className="cursor-pointer ">
