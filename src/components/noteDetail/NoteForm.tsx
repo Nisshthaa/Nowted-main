@@ -2,7 +2,7 @@ import { Calendar, Folder } from "lucide-react";
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useAppState } from "../../state/useAppState";
 import { createNote, updateNote } from "../../api/noteAPI";
-import { showError, showSuccess } from "../utils/notifications";
+import { showError } from "../utils/notifications";
 import { useNavigate, useLocation } from "react-router-dom";
 
 const NoteForm: React.FC = () => {
