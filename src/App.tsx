@@ -5,6 +5,7 @@ import { Toaster } from "react-hot-toast";
 
 import AppLayout from "./components/layout/AppLayout";
 import NoteView from "./components/noteDetail/NoteView";
+import NotFound from "./components/NotFound";
 
 const App: React.FC = () => {
   return (
@@ -31,6 +32,8 @@ const App: React.FC = () => {
             element={<NoteView />}
           />
         </Route>
+
+        <Route path="*" element={<NotFound />} />
       </Routes>
 
       <Toaster />
