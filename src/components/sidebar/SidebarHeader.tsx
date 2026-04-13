@@ -7,8 +7,6 @@ import type { Note } from "../types/dataTypes";
 import logo from "/logo.svg";
 
 const SidebarHeader: React.FC = () => {
-
-  //global states
   const {
     setActiveNoteMode,
     searchText,
@@ -25,7 +23,6 @@ const SidebarHeader: React.FC = () => {
     activeView,
   } = useAppState();
 
-  //routing
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -33,26 +30,24 @@ const SidebarHeader: React.FC = () => {
 
   const [theme, setTheme] = useState<"light" | "dark">("dark");
 
-  // Restore search text from URL on component mount or URL change
   useEffect(() => {
-    const init=()=>{
+    const init = () => {
       const params = new URLSearchParams(location.search);
-    const searchQuery = params.get("search");
-    
-    if (searchQuery) {
-      setSearchText(searchQuery);
-      setSearch(true);
-    } else {
-      if (search) {
-        setSearch(false);
-        setSearchText("");
+      const searchQuery = params.get("search");
+
+      if (searchQuery) {
+        setSearchText(searchQuery);
+        setSearch(true);
+      } else {
+        if (search) {
+          setSearch(false);
+          setSearchText("");
+        }
       }
-    }
-    }
-    init()
+    };
+    init();
   }, [location.search]);
 
-  //toggle theme
   useEffect(() => {
     const init = () => {
       const saved = localStorage.getItem("theme") as "light" | "dark";
@@ -81,7 +76,6 @@ const SidebarHeader: React.FC = () => {
     }
   };
 
-  //search handler 
   const handleSearchResultClick = (note: Note) => {
     setSelectedNoteId(note.id);
     setActiveNoteMode("view");
@@ -93,7 +87,6 @@ const SidebarHeader: React.FC = () => {
     } else if (activeView === "archived") {
       navigate(`/archived/${encodeURIComponent(note.title)}/${note.id}`);
     } else {
-      // View is "all" - navigate to folder
       const noteFolder = folders.find((folder) => folder.id === note.folderId);
       if (noteFolder) {
         setSelectedFolder(noteFolder);
@@ -109,22 +102,21 @@ const SidebarHeader: React.FC = () => {
     setSearch(false);
   };
 
-  // Handle search input change and update URL
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
     setSearchText(query);
 
     if (query.trim()) {
-      // Add or update search query parameter
       const params = new URLSearchParams(location.search);
       params.set("search", query);
       navigate(`${location.pathname}?${params.toString()}`, { replace: true });
     } else {
-      // Remove search query parameter if empty
       const params = new URLSearchParams(location.search);
       params.delete("search");
       const newSearch = params.toString();
-      navigate(`${location.pathname}${newSearch ? `?${newSearch}` : ""}`, { replace: true });
+      navigate(`${location.pathname}${newSearch ? `?${newSearch}` : ""}`, {
+        replace: true,
+      });
     }
   };
 
@@ -132,12 +124,12 @@ const SidebarHeader: React.FC = () => {
     <div className="flex flex-col gap-4  ">
       <div className="flex justify-between items-center  h-13 ">
         {theme === "dark" ? (
-         
-
-<img  className="w-30 h-15.5" src={logo} />
+          <img className="w-30 h-15.5" src={logo} />
         ) : (
-          <img   className="w-30 h-15.5 filter invert sepia hue-rotate-200 saturate-500"src={logo} />
-        
+          <img
+            className="w-30 h-15.5 filter invert sepia hue-rotate-200 saturate-500"
+            src={logo}
+          />
         )}
         <div className="flex gap-5 justify-center">
           <div onClick={toggleTheme} className="cursor-pointer ">
@@ -148,17 +140,18 @@ const SidebarHeader: React.FC = () => {
             )}
           </div>
 
-
           <Search
             onClick={() => {
               setSearch((prev) => {
                 const newSearch = !prev;
                 if (!newSearch) {
-                  // Remove search query parameter when closing search
                   const params = new URLSearchParams(location.search);
                   params.delete("search");
                   const newSearchStr = params.toString();
-                  navigate(`${location.pathname}${newSearchStr ? `?${newSearchStr}` : ""}`, { replace: true });
+                  navigate(
+                    `${location.pathname}${newSearchStr ? `?${newSearchStr}` : ""}`,
+                    { replace: true },
+                  );
                   setSearchText("");
                 }
                 return newSearch;
@@ -199,45 +192,43 @@ const SidebarHeader: React.FC = () => {
                 ))
               ) : (
                 <div className="p-4 text-center">
-                  <p className="text-(--text-secondary) text-m">No notes found</p>
+                  <p className="text-(--text-secondary) text-m">
+                    No notes found
+                  </p>
                 </div>
               )}
             </div>
           )}
         </div>
-      )
+      ) : (
+        <div className=" flex justify-center items-center  h-13 w-70 pr-5 pl-5 ">
+          <button
+            className=" flex items-center justify-center gap-2 w-full h-10 bg-(--btn-bg) hover:bg-(--btn-hover) active:scale-[0.98] text-(--text-primary) text-[18px] font-medium rounded-md transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer"
+            style={{ fontFamily: "var(--font-primary)" }}
+            onClick={() => {
+              if (!selectedFolder) return;
 
-        :
+              setSelectedNoteId(null);
 
-        (
-          <div className=" flex justify-center items-center  h-13 w-70 pr-5 pl-5 ">
-            <button
-              className=" flex items-center justify-center gap-2 w-full h-10 bg-(--btn-bg) hover:bg-(--btn-hover) active:scale-[0.98] text-(--text-primary) text-[18px] font-medium rounded-md transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer"
-              style={{ fontFamily: "var(--font-primary)" }}
-              onClick={() => {
-                if (!selectedFolder) return;
+              const folderPath = `/${selectedFolder.name}/${selectedFolder.id}`;
+              const createPath = `${folderPath}/create`;
 
-                setSelectedNoteId(null);
+              const onCreatePath = location.pathname === createPath;
 
-                const folderPath = `/${selectedFolder.name}/${selectedFolder.id}`;
-                const createPath = `${folderPath}/create`;
+              if (activeNoteMode === "create" || onCreatePath) {
+                setActiveNoteMode("view");
+                navigate(folderPath);
+                return;
+              }
 
-                const onCreatePath = location.pathname === createPath;
-
-                if (activeNoteMode === "create" || onCreatePath) {
-                  setActiveNoteMode("view");
-                  navigate(folderPath);
-                  return;
-                }
-
-                setActiveNoteMode("create");
-                navigate(createPath);
-              }}
-            >
-              <Plus className="h-6 w-6" /> New Note
-            </button>
-          </div>
-        )}
+              setActiveNoteMode("create");
+              navigate(createPath);
+            }}
+          >
+            <Plus className="h-6 w-6" /> New Note
+          </button>
+        </div>
+      )}
     </div>
   );
 };

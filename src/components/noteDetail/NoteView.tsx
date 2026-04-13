@@ -1,4 +1,5 @@
- import { Archive,
+import {
+  Archive,
   Calendar,
   CircleEllipsis,
   FileText,
@@ -26,7 +27,6 @@ const NoteView: React.FC = () => {
     setRefreshNotes,
     setActiveNoteMode,
     setSelectedNoteId,
-    
   } = useAppState();
 
   const [fullNote, setfullNote] = useState<FullNote | null>(null);
@@ -50,8 +50,6 @@ const NoteView: React.FC = () => {
       setRefreshNotes((prev) => !prev);
       setActiveNoteMode("view");
 
-     
-      
       setSelectedNoteId(null);
 
       showSuccess(updatedValue ? "Note Archived!" : "Note Unarchived!");
@@ -71,7 +69,7 @@ const NoteView: React.FC = () => {
         });
 
         setfullNote((prev) =>
-          prev ? { ...prev, deletedAt: deletedAtTime } : prev
+          prev ? { ...prev, deletedAt: deletedAtTime } : prev,
         );
 
         setShowMenu(false);
@@ -93,7 +91,9 @@ const NoteView: React.FC = () => {
       const updatedValue = !fullNote.isFavorite;
       await updateNote(fullNote.id, { isFavorite: updatedValue });
 
-      setfullNote((prev) => (prev ? { ...prev, isFavorite: updatedValue } : prev));
+      setfullNote((prev) =>
+        prev ? { ...prev, isFavorite: updatedValue } : prev,
+      );
 
       setShowMenu(false);
       setRefreshNotes((prev) => !prev);
@@ -159,31 +159,39 @@ const NoteView: React.FC = () => {
     fetchNotes();
   }, [noteId, selectedNoteId, activeNoteMode, setActiveNoteMode]);
 
-const debouncedSave = useCallback((data: { title?: string; content?: string }) => {
-  if (debounceTimer.current) {
-    clearTimeout(debounceTimer.current);
-  }
-
-  debounceTimer.current = setTimeout(async () => {
-    if (noteIdRef.current) {
-      try {
-        setIsSaving(true);
-        await updateNote(noteIdRef.current, data);
-        setRefreshNotes((prev) => !prev);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setIsSaving(false);
+  const debouncedSave = useCallback(
+    (data: { title?: string; content?: string }) => {
+      if (debounceTimer.current) {
+        clearTimeout(debounceTimer.current);
       }
-    }
-  }, 1500);
-}, [setRefreshNotes]);
+
+      debounceTimer.current = setTimeout(async () => {
+        if (noteIdRef.current) {
+          try {
+            setIsSaving(true);
+            await updateNote(noteIdRef.current, data);
+            setRefreshNotes((prev) => !prev);
+          } catch (err) {
+            console.error(err);
+          } finally {
+            setIsSaving(false);
+          }
+        }
+      }, 1500);
+    },
+    [setRefreshNotes],
+  );
 
   if (activeNoteMode === "create") return <NoteForm />;
 
   if (location.pathname.includes("/create")) return <NoteForm />;
 
-  if (activeNoteMode === "restore" && fullNote && fullNote.deletedAt && (noteId || selectedNoteId)) {
+  if (
+    activeNoteMode === "restore" &&
+    fullNote &&
+    fullNote.deletedAt &&
+    (noteId || selectedNoteId)
+  ) {
     return <RestoreNote noteId={fullNote.id} noteTitle={fullNote.title} />;
   }
 
@@ -219,19 +227,22 @@ const debouncedSave = useCallback((data: { title?: string; content?: string }) =
     <div className="flex flex-col h-screen p-8 gap-8 bg-(--panel-bg)">
       <div className="flex flex-col gap-6">
         <div className="flex justify-between items-start">
- 
-
           <input
             className="text-(--text-primary) text-3xl font-semibold bg-transparent outline-none"
             value={fullNote.title}
             onChange={(e) => {
               const newTitle = e.target.value;
-              setfullNote((prev) => (prev ? { ...prev, title: newTitle } : prev));
+              setfullNote((prev) =>
+                prev ? { ...prev, title: newTitle } : prev,
+              );
               debouncedSave({ title: newTitle });
             }}
           />
 
-          <div ref={menuRef} className="relative flex gap-15 items-center justify-center">
+          <div
+            ref={menuRef}
+            className="relative flex gap-15 items-center justify-center"
+          >
             {fullNote.isFavorite && (
               <Star className="w-8 h-8 text-yellow-400 fill-yellow-400" />
             )}
@@ -273,7 +284,9 @@ const debouncedSave = useCallback((data: { title?: string; content?: string }) =
                       onClick={handleDelete}
                     >
                       <Trash className="w-5 h-5 text-(--text-primary) flex-shrink-0" />
-                      <p className="text-(--text-primary) whitespace-nowrap">Delete</p>
+                      <p className="text-(--text-primary) whitespace-nowrap">
+                        Delete
+                      </p>
                     </div>
                   </>
                 ) : (
@@ -282,7 +295,9 @@ const debouncedSave = useCallback((data: { title?: string; content?: string }) =
                     onClick={handleRestore}
                   >
                     <History className="w-5 h-5 text-(--text-primary) flex-shrink-0" />
-                    <p className="text-(--text-primary) whitespace-nowrap">Restore</p>
+                    <p className="text-(--text-primary) whitespace-nowrap">
+                      Restore
+                    </p>
                   </div>
                 )}
               </div>
@@ -318,11 +333,22 @@ const debouncedSave = useCallback((data: { title?: string; content?: string }) =
           {isSaving && (
             <div className="flex items-center gap-3 p-4 rounded-lg bg-(--card-bg) border border-(--border-color)">
               <div className="flex gap-1.5">
-                <div className="w-3 h-3 bg-(--accent) rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                <div className="w-3 h-3 bg-(--accent) rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                <div className="w-3 h-3 bg-(--accent) rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                <div
+                  className="w-3 h-3 bg-(--accent) rounded-full animate-bounce"
+                  style={{ animationDelay: "0ms" }}
+                ></div>
+                <div
+                  className="w-3 h-3 bg-(--accent) rounded-full animate-bounce"
+                  style={{ animationDelay: "150ms" }}
+                ></div>
+                <div
+                  className="w-3 h-3 bg-(--accent) rounded-full animate-bounce"
+                  style={{ animationDelay: "300ms" }}
+                ></div>
               </div>
-              <p className="text-(--text-primary) text-base font-semibold">Saving...</p>
+              <p className="text-(--text-primary) text-base font-semibold">
+                Saving...
+              </p>
             </div>
           )}
         </div>
@@ -333,7 +359,9 @@ const debouncedSave = useCallback((data: { title?: string; content?: string }) =
         value={fullNote.content}
         onChange={(e) => {
           const newContent = e.target.value;
-          setfullNote((prev) => (prev ? { ...prev, content: newContent } : prev));
+          setfullNote((prev) =>
+            prev ? { ...prev, content: newContent } : prev,
+          );
           debouncedSave({ content: newContent });
         }}
       />
@@ -342,6 +370,3 @@ const debouncedSave = useCallback((data: { title?: string; content?: string }) =
 };
 
 export default NoteView;
-
-
-

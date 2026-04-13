@@ -43,6 +43,8 @@ export type CreateNoteData = {
   title: string;
   content: string;
   folderId: string;
+  isFavorite?:boolean;
+  isArchived?:boolean
 };
 
 export type UpdateNoteData = {
