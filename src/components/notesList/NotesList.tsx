@@ -33,7 +33,7 @@ const NotesList: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-//pagination
+
   useEffect(() => {
     loadingRef.current = loading;
   }, [loading]);
@@ -42,7 +42,7 @@ const NotesList: React.FC = () => {
     hasMoreRef.current = hasMore;
   }, [hasMore]);
 
-  //debouncing 
+   
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedQuery(searchText.trim().toLowerCase());
@@ -51,7 +51,6 @@ const NotesList: React.FC = () => {
     return () => clearTimeout(timer);
   }, [searchText]);
 
-  //show notes based on view
   useEffect(() => {
     if (location.pathname === "/favorites") {
       setActiveView("favorites");
@@ -75,7 +74,7 @@ const NotesList: React.FC = () => {
     }
   }, [location.pathname, folders, setActiveView, setSelectedFolder]);
 
-  //sending params to url
+  
   const filters: GetNotesParams = (() => {
     if (activeView === "favorites") {
       return { favorite: true };
@@ -169,6 +168,10 @@ const NotesList: React.FC = () => {
 
         setLoading(true);
 
+    
+        const scrollContainer = currentRef.closest('.overflow-y-auto') as HTMLElement | null;
+        const scrollPos = scrollContainer?.scrollTop ?? 0;
+
         try {
           const nextPage = pageRef.current + 1;
           const res = await getNotes({
@@ -179,7 +182,18 @@ const NotesList: React.FC = () => {
 
           const data = res.data.notes ?? [];
 
-          setNotes((prev) => [...prev, ...data]);
+          
+          setNotes((prev) => {
+            const updated = [...prev, ...data];
+          
+            setTimeout(() => {
+              if (scrollContainer) {
+                scrollContainer.scrollTop = scrollPos;
+              }
+            }, 0);
+            
+            return updated;
+          });
 
           if (data.length < limit) {
             setHasMore(false);
