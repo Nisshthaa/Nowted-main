@@ -11,6 +11,7 @@ const More: React.FC = () => {
     setSelectedNoteId,
     setActiveNoteMode,
     setSelectedFolder,
+    setSearchText,
   } = useAppState();
 
   return (
@@ -29,6 +30,7 @@ const More: React.FC = () => {
           setSelectedNoteId(null);
           setActiveNoteMode("view");
           setSelectedFolder(null);
+          setSearchText("");
 
           navigate("/favorites");
         }}
@@ -50,6 +52,7 @@ const More: React.FC = () => {
           setSelectedNoteId(null);
           setActiveNoteMode("restore");
           setSelectedFolder(null);
+          setSearchText("");
 
           navigate("/trash");
         }}
@@ -71,6 +74,7 @@ const More: React.FC = () => {
           setSelectedNoteId(null);
           setActiveNoteMode("view");
           setSelectedFolder(null);
+          setSearchText("");
 
           navigate("/archived");
         }}

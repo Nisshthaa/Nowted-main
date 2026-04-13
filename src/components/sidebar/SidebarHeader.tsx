@@ -22,6 +22,7 @@ const SidebarHeader: React.FC = () => {
     setActiveView,
     setSelectedFolder,
     searchResults,
+    activeView,
   } = useAppState();
 
   //routing
@@ -63,16 +64,25 @@ const SidebarHeader: React.FC = () => {
 
   //search handler 
   const handleSearchResultClick = (note: Note) => {
-    const noteFolder = folders.find((folder) => folder.id === note.folderId);
+    setSelectedNoteId(note.id);
+    setActiveNoteMode("view");
 
-    if (noteFolder) {
-      setSelectedFolder(noteFolder);
-      setActiveView("all");
-      setSelectedNoteId(note.id);
-      setActiveNoteMode("view");
-      navigate(
-        `/${encodeURIComponent(noteFolder.name)}/${noteFolder.id}/${encodeURIComponent(note.title)}/${note.id}`,
-      );
+    if (activeView === "favorites") {
+      navigate(`/favorites/${encodeURIComponent(note.title)}/${note.id}`);
+    } else if (activeView === "trash") {
+      navigate(`/trash/${encodeURIComponent(note.title)}/${note.id}`);
+    } else if (activeView === "archived") {
+      navigate(`/archived/${encodeURIComponent(note.title)}/${note.id}`);
+    } else {
+      // View is "all" - navigate to folder
+      const noteFolder = folders.find((folder) => folder.id === note.folderId);
+      if (noteFolder) {
+        setSelectedFolder(noteFolder);
+        setActiveView("all");
+        navigate(
+          `/${encodeURIComponent(noteFolder.name)}/${noteFolder.id}/${encodeURIComponent(note.title)}/${note.id}`,
+        );
+      }
     }
 
     setShowSearchDropdown(false);

@@ -39,6 +39,8 @@ const FolderList: React.FC = () => {
     folders,
     setFolders,
     setSelectedNoteId,
+    setSearchText,
+    setActiveView,
   } = useAppState();
 
   useEffect(() => {
@@ -204,6 +206,8 @@ const FolderList: React.FC = () => {
                   setSelectedFolder(folder);
                   setSelectedNoteId(null);
                   setActiveNoteMode("view");
+                  setSearchText("");
+                  setActiveView("all");
 
                   navigate(`/${encodeURIComponent(folder.name)}/${folder.id}`);
                 }}

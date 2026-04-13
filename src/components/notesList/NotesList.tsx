@@ -51,31 +51,7 @@ const NotesList: React.FC = () => {
     return () => clearTimeout(timer);
   }, [searchText]);
 
-  
-  useEffect(() => {
-    const fetchSearchResults = async () => {
-      if (!debouncedQuery.trim()) {
-        setSearchResults([]);
-        setShowSearchDropdown(false);
-        return;
-      }
-
-      try {
-        const res = await getNotes({ search: debouncedQuery });
-        const data = res.data.notes ?? [];
-        setSearchResults(data);
-        setShowSearchDropdown(true);
-      } catch (err) {
-        console.error(err);
-        setSearchResults([]);
-      }
-    };
-
-    fetchSearchResults();
-  }, [debouncedQuery]);
-
-  
-//show notes based on view
+  //show notes based on view
   useEffect(() => {
     if (location.pathname === "/favorites") {
       setActiveView("favorites");
@@ -99,7 +75,7 @@ const NotesList: React.FC = () => {
     }
   }, [location.pathname, folders, setActiveView, setSelectedFolder]);
 
-//sending params to url
+  //sending params to url
   const filters: GetNotesParams = (() => {
     if (activeView === "favorites") {
       return { favorite: true };
@@ -113,6 +89,29 @@ const NotesList: React.FC = () => {
     if (selectedFolder) return { folderId: selectedFolder.id };
     return {};
   })();
+
+  
+  useEffect(() => {
+    const fetchSearchResults = async () => {
+      if (!debouncedQuery.trim()) {
+        setSearchResults([]);
+        setShowSearchDropdown(false);
+        return;
+      }
+
+      try {
+        const res = await getNotes({ ...filters, search: debouncedQuery });
+        const data = res.data.notes ?? [];
+        setSearchResults(data);
+        setShowSearchDropdown(true);
+      } catch (err) {
+        console.error(err);
+        setSearchResults([]);
+      }
+    };
+
+    fetchSearchResults();
+  }, [debouncedQuery, filters]);
 
   const filtersKey = JSON.stringify(filters);
 
