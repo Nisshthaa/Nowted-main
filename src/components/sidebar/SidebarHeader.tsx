@@ -33,6 +33,25 @@ const SidebarHeader: React.FC = () => {
 
   const [theme, setTheme] = useState<"light" | "dark">("dark");
 
+  // Restore search text from URL on component mount or URL change
+  useEffect(() => {
+    const init=()=>{
+      const params = new URLSearchParams(location.search);
+    const searchQuery = params.get("search");
+    
+    if (searchQuery) {
+      setSearchText(searchQuery);
+      setSearch(true);
+    } else {
+      if (search) {
+        setSearch(false);
+        setSearchText("");
+      }
+    }
+    }
+    init()
+  }, [location.search]);
+
   //toggle theme
   useEffect(() => {
     const init = () => {
@@ -90,6 +109,25 @@ const SidebarHeader: React.FC = () => {
     setSearch(false);
   };
 
+  // Handle search input change and update URL
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const query = e.target.value;
+    setSearchText(query);
+
+    if (query.trim()) {
+      // Add or update search query parameter
+      const params = new URLSearchParams(location.search);
+      params.set("search", query);
+      navigate(`${location.pathname}?${params.toString()}`, { replace: true });
+    } else {
+      // Remove search query parameter if empty
+      const params = new URLSearchParams(location.search);
+      params.delete("search");
+      const newSearch = params.toString();
+      navigate(`${location.pathname}${newSearch ? `?${newSearch}` : ""}`, { replace: true });
+    }
+  };
+
   return (
     <div className="flex flex-col gap-4  ">
       <div className="flex justify-between items-center  h-13 ">
@@ -113,8 +151,18 @@ const SidebarHeader: React.FC = () => {
 
           <Search
             onClick={() => {
-              setSearch((prev) => !prev);
-              setSearchText("");
+              setSearch((prev) => {
+                const newSearch = !prev;
+                if (!newSearch) {
+                  // Remove search query parameter when closing search
+                  const params = new URLSearchParams(location.search);
+                  params.delete("search");
+                  const newSearchStr = params.toString();
+                  navigate(`${location.pathname}${newSearchStr ? `?${newSearchStr}` : ""}`, { replace: true });
+                  setSearchText("");
+                }
+                return newSearch;
+              });
             }}
             className="w-6 h-7 text-(--text-primary) cursor-pointer opacity-70 hover:opacity-100 transition"
           />
@@ -129,7 +177,7 @@ const SidebarHeader: React.FC = () => {
             className="w-full h-10 px-3 rounded-md bg-(--panel-bg) text-(--text-primary) outline-none border border-(--border-color) focus:ring-2 focus:ring-(--accent)"
             style={{ fontFamily: "var(--font-primary)" }}
             value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
+            onChange={handleSearchChange}
           />
 
           {showSearchDropdown && (
