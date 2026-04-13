@@ -26,6 +26,7 @@ const NoteView: React.FC = () => {
     setRefreshNotes,
     setActiveNoteMode,
     setSelectedNoteId,
+    
   } = useAppState();
 
   const [fullNote, setfullNote] = useState<FullNote | null>(null);
@@ -44,13 +45,13 @@ const NoteView: React.FC = () => {
       const updatedValue = !fullNote.isArchived;
       await updateNote(fullNote.id, { isArchived: updatedValue });
 
-      setfullNote((prev) =>
-        prev ? { ...prev, isArchived: updatedValue } : prev
-      );
-
       setShowMenu(false);
       setRefreshNotes((prev) => !prev);
       setActiveNoteMode("view");
+
+     
+      
+      setSelectedNoteId(null);
 
       showSuccess(updatedValue ? "Note Archived!" : "Note Unarchived!");
     } catch {
@@ -172,7 +173,7 @@ const debouncedSave = useCallback((data: { title?: string; content?: string }) =
     return <RestoreNote noteId={fullNote.id} noteTitle={fullNote.title} />;
   }
 
-  if (!noteId && !selectedNoteId) {
+  if (!selectedNoteId) {
     return (
       <div className="flex flex-col items-center justify-center h-screen gap-4 bg-(--sidebar-bg)">
         <FileText className="w-20 h-20 text-(--text-primary)" strokeWidth={1} />
