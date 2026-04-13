@@ -32,6 +32,7 @@ const NoteView: React.FC = () => {
   const [fullNote, setfullNote] = useState<FullNote | null>(null);
   const [loadingNote, setLoadingNote] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const noteIdRef = useRef<string | null>(null);
@@ -142,6 +143,12 @@ const NoteView: React.FC = () => {
         const note = res.data.note;
         setfullNote(note);
         noteIdRef.current = note.id;
+
+        if (note.deletedAt) {
+          setActiveNoteMode("restore");
+        } else if (activeNoteMode === "restore") {
+          setActiveNoteMode("view");
+        }
       } catch (err) {
         console.log(err);
       } finally {
@@ -150,26 +157,33 @@ const NoteView: React.FC = () => {
     };
 
     fetchNotes();
-  }, [noteId, selectedNoteId]);
+  }, [noteId, selectedNoteId, activeNoteMode, setActiveNoteMode]);
 
 const debouncedSave = useCallback((data: { title?: string; content?: string }) => {
   if (debounceTimer.current) {
     clearTimeout(debounceTimer.current);
   }
 
-  debounceTimer.current = setTimeout(() => {
+  debounceTimer.current = setTimeout(async () => {
     if (noteIdRef.current) {
-      updateNote(noteIdRef.current, data);
-      setRefreshNotes((prev) => !prev);
+      try {
+        setIsSaving(true);
+        await updateNote(noteIdRef.current, data);
+        setRefreshNotes((prev) => !prev);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setIsSaving(false);
+      }
     }
-  }, 300);
+  }, 1500);
 }, [setRefreshNotes]);
 
   if (activeNoteMode === "create") return <NoteForm />;
 
   if (location.pathname.includes("/create")) return <NoteForm />;
 
-  if (activeNoteMode === "restore" && fullNote && (noteId || selectedNoteId)) {
+  if (activeNoteMode === "restore" && fullNote && fullNote.deletedAt && (noteId || selectedNoteId)) {
     return <RestoreNote noteId={fullNote.id} noteTitle={fullNote.title} />;
   }
 
@@ -300,6 +314,17 @@ const debouncedSave = useCallback((data: { title?: string; content?: string }) =
               {fullNote.folder?.name || "Unknown Folder"}
             </p>
           </div>
+
+          {isSaving && (
+            <div className="flex items-center gap-3 p-4 rounded-lg bg-(--card-bg) border border-(--border-color)">
+              <div className="flex gap-1.5">
+                <div className="w-3 h-3 bg-(--accent) rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                <div className="w-3 h-3 bg-(--accent) rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                <div className="w-3 h-3 bg-(--accent) rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+              </div>
+              <p className="text-(--text-primary) text-base font-semibold">Saving...</p>
+            </div>
+          )}
         </div>
       </div>
 

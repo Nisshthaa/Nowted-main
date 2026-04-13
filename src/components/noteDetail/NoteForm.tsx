@@ -47,22 +47,6 @@ const NoteForm: React.FC = () => {
             noteIdRef.current = newNoteId;
 
             setRefreshNotes((prev) => !prev);
-            showSuccess("Note created successfully!");
-
-            
-            setTimeout(() => {
-              if (location.pathname.includes("/create")) {
-                const pathSegments = location.pathname.split("/").filter(Boolean);
-                if (pathSegments[0] === "create") {
-                  navigate("/");
-                } else {
-                  const folderName = pathSegments[0];
-                  const folderId = pathSegments[1];
-                  navigate(`/${folderName}/${folderId}/${encodeURIComponent(titleValue)}/${newNoteId}`);
-                }
-              }
-              setActiveNoteMode("view");
-            }, 300);
           } else {
            
             await updateNote(noteIdRef.current, {

@@ -5,8 +5,12 @@ import { restoreNote } from "../../api/noteAPI";
 import { showError, showSuccess } from "../utils/notifications";
 import type { RestoreProps } from "../types/dataTypes";
 import { getFoldersData } from "../../api/folderAPI";
+import { useNavigate, useLocation } from "react-router-dom";
+
 
 const RestoreNote: React.FC<RestoreProps> = ({ noteId, noteTitle }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const {
     setRefreshNotes,
     setSelectedNoteId,
@@ -15,6 +19,7 @@ const RestoreNote: React.FC<RestoreProps> = ({ noteId, noteTitle }) => {
     setFolders,
     selectedFolder,
   } = useAppState();
+
 
   const handleRestore = async () => {
     if (!noteId) return;
@@ -25,9 +30,16 @@ const RestoreNote: React.FC<RestoreProps> = ({ noteId, noteTitle }) => {
 
       const response = await getFoldersData();
       setFolders(response.data.folders);
+      
       setRefreshNotes((prev) => !prev);
-      setSelectedNoteId(noteId);
+      setSelectedNoteId(null);
       setActiveNoteMode("view");
+      
+      if (location.pathname.includes("/trash")) {
+        navigate("/trash");
+      } else {
+        navigate(location.pathname);
+      }
 
       if (selectedFolder?.id) {
         setActiveView("all");
@@ -44,7 +56,7 @@ const RestoreNote: React.FC<RestoreProps> = ({ noteId, noteTitle }) => {
     <div className="flex flex-col items-center justify-center h-screen gap-6 bg-(--sidebar-bg) text-center px-4">
       <History className="w-20 h-20 text-(--text-primary)" strokeWidth={1} />
 
-      <p className="text-2xl font-semibold text-(--text-primary)">
+      <p className="text-2xl font-semibold text-(--text-primary) ">
         Restore {noteTitle}
       </p>
 
