@@ -41,6 +41,7 @@ const FolderList: React.FC = () => {
     setSelectedNoteId,
     setSearchText,
     setActiveView,
+    selectedFolder,
   } = useAppState();
 
   useEffect(() => {
@@ -65,16 +66,21 @@ const FolderList: React.FC = () => {
     getFolders();
   }, [setFolders, setSelectedFolder]);
 
-  //default url
+ 
   useEffect(() => {
     if (folders.length > 0 && location.pathname === "/") {
       navigate(`/${encodeURIComponent(folders[0].name)}/${folders[0].id}`);
     }
   }, [folders, location.pathname, navigate]);
 
+  useEffect(() => {
+    if (selectedFolder && !location.pathname.includes(selectedFolder.id)) {
+      navigate(`/${encodeURIComponent(selectedFolder.name)}/${selectedFolder.id}`);
+    }
+  }, [selectedFolder, navigate, location.pathname]);
+
   const filteredFolders = folders;
 
-  //folder creation handler
   const handleCreateFolder = async () => {
     if (!newFolderName.trim()) return;
 
@@ -99,13 +105,11 @@ const FolderList: React.FC = () => {
     }
   };
 
-  //folder rename handler
   const handleEditClick = (folder: FolderType) => {
     setEditingFolderId(folder.id);
     setEditedName(folder.name);
   };
 
-  //save changes
   const handleSaveFolder = async (folderId: string) => {
     if (!editedName.trim()) return;
 
@@ -126,7 +130,6 @@ const FolderList: React.FC = () => {
     }
   };
 
-  //delete handler
   const handleDeleteFolder = async (folderId: string) => {
     try {
       await deleteFolder(folderId);
@@ -194,7 +197,7 @@ const FolderList: React.FC = () => {
 
         {!loadingFolders &&
           filteredFolders.map((folder) => {
-            const isActive = location.pathname.includes(folder.id);
+            const isActive = selectedFolder?.id === folder.id;
 
             return (
               <div
@@ -213,61 +216,61 @@ const FolderList: React.FC = () => {
                 }}
               >
                 {isActive ? (
-                  <>
-                    <FolderOpen className="w-6 h-7 text-(--text-primary)" />
-                    <div className="flex justify-between w-full ">
-                      {editingFolderId === folder.id ? (
-                        <input
-                          value={editedName}
-                          autoFocus
-                          onChange={(e) => setEditedName(e.target.value)}
-                          className="bg-(--card-bg) text-(--text-primary) px-2 py-1 rounded border border-(--border-color) outline-none"
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                      ) : (
-                        <p className="font-semibold text-[18px] text-(--text-primary)">
-                          {folder.name}
-                        </p>
-                      )}
+                  <FolderOpen className="w-6 h-7 text-(--text-primary)" />
+                ) : (
+                  <Folder className="w-6 h-6 text-(--text-secondary) group-hover:text-(--text-primary)" />
+                )}
 
-                      <div className="flex gap-3">
-                        {editingFolderId === folder.id ? (
-                          <Check
-                            className="w-6 h-6 text-green-500 cursor-pointer"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleSaveFolder(folder.id);
-                            }}
-                          />
-                        ) : (
-                          <Pencil
-                            className="w-6 h-6 text-(--text-primary) cursor-pointer"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleEditClick(folder);
-                            }}
-                          />
-                        )}
-                        <Trash2
-                          className="w-6 h-6 text-(--text-primary)"
+                <div className="flex justify-between w-full">
+                  {editingFolderId === folder.id ? (
+                    <input
+                      value={editedName}
+                      autoFocus
+                      onChange={(e) => setEditedName(e.target.value)}
+                      className="bg-(--card-bg) text-(--text-primary) px-2 py-1 rounded border border-(--border-color) outline-none"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  ) : (
+                    <p
+                      className={`font-semibold text-[18px] ${
+                        isActive
+                          ? "text-(--text-primary)"
+                          : "text-(--text-secondary) group-hover:text-(--text-primary)"
+                      }`}
+                    >
+                      {folder.name}
+                    </p>
+                  )}
+
+                  {isActive && (
+                    <div className="flex gap-3">
+                      {editingFolderId === folder.id ? (
+                        <Check
+                          className="w-6 h-6 text-green-500 cursor-pointer"
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleDeleteFolder(folder.id);
+                            handleSaveFolder(folder.id);
                           }}
                         />
-                      </div>
+                      ) : (
+                        <Pencil
+                          className="w-6 h-6 text-(--text-primary) cursor-pointer hover:text-blue-500 transition-colors"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEditClick(folder);
+                          }}
+                        />
+                      )}
+                      <Trash2
+                        className="w-6 h-6 text-(--text-primary) cursor-pointer hover:text-red-500 transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteFolder(folder.id);
+                        }}
+                      />
                     </div>
-                  </>
-                ) : (
-                  <>
-                    <Folder className="w-6 h-6 text-(--text-secondary) group-hover:text-(--text-primary)" />
-                    <div className="flex justify-between w-full">
-                      <p className="font-semibold text-[18px] text-(--text-secondary) group-hover:text-(--text-primary)">
-                        {folder.name}
-                      </p>
-                    </div>
-                  </>
-                )}
+                  )}
+                </div>
               </div>
             );
           })}
