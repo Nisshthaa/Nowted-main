@@ -1,25 +1,28 @@
 import { History } from "lucide-react";
 import React from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAppState } from "../../state/useAppState";
 import { restoreNote } from "../../api/noteAPI";
 import { showError, showSuccess } from "../utils/notifications";
-import type { RestoreProps } from "../types/dataTypes";
 import { getFoldersData } from "../../api/folderAPI";
-import { useNavigate, useLocation } from "react-router-dom";
-
+import type { RestoreProps } from "../types/dataTypes";
 
 const RestoreNote: React.FC<RestoreProps> = ({ noteId, noteTitle }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const pathParts = location.pathname.split("/").filter(Boolean);
+
+const folderName = pathParts[0]; 
+const folderId = pathParts[1];   
+
   const {
-    setRefreshNotes,
+    updateNoteInList,
     setSelectedNoteId,
     setActiveView,
     setActiveNoteMode,
     setFolders,
-    selectedFolder,
+    
   } = useAppState();
-
 
   const handleRestore = async () => {
     if (!noteId) return;
@@ -27,23 +30,24 @@ const RestoreNote: React.FC<RestoreProps> = ({ noteId, noteTitle }) => {
     try {
       await restoreNote(noteId);
 
-
       const response = await getFoldersData();
       setFolders(response.data.folders);
-      
-      setRefreshNotes((prev) => !prev);
+
+      updateNoteInList(noteId, { deletedAt: null });
       setSelectedNoteId(null);
       setActiveNoteMode("view");
-      
-      if (location.pathname.includes("/trash")) {
+
+      if (location.pathname.includes("/favorites")) {
+        navigate("/favorites");
+      } else if (location.pathname.includes("/archived")) {
+        navigate("/archived");
+      } else if (location.pathname.includes("/trash")) {
         navigate("/trash");
-      } else {
-        navigate(location.pathname);
+      } else if (folderId && folderName) {
+        navigate(`/${folderName}/${folderId}`);
       }
 
-      if (selectedFolder?.id) {
-        setActiveView("all");
-      }
+      setActiveView("all");
 
       showSuccess("Note Restored!");
     } catch (err) {

@@ -12,12 +12,14 @@ export type Folder = {
 };
 
 export type Note = BaseNote & {
-  preview: string;
+  
+  preview?: string;
   folderId?: string;
   deletedAt?: string | null;
   isFavorite?:boolean;
   isArchived?:boolean;
   updatedAt?: string;
+  content?:string
 };
 
 export type FullNote = BaseNote & {
@@ -40,6 +42,7 @@ export type GetNotesParams = {
 };
 
 export type CreateNoteData = {
+  
   title: string;
   content: string;
   folderId: string;

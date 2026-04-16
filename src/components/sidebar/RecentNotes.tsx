@@ -12,12 +12,12 @@ const RecentNotes: React.FC = () => {
   const navigate = useNavigate();
 
   const {
-    setSelectedFolder,
     selectedNoteId,
     folders,
     setSelectedNoteId,
     setActiveView,
     setActiveNoteMode,
+  
   } = useAppState();
 
   //fetch recent notes
@@ -36,7 +36,22 @@ const RecentNotes: React.FC = () => {
 
     getRecent();
   }, []);
-  
+
+  const handleClick = (note: Note) => {
+    const folderId = note.folderId ?? "";
+
+    const folder = folders.find((f) => f.id === note.folderId);
+
+    const folderName = folder?.name || "Unknown Folder";
+
+    setSelectedNoteId(note.id);
+    setActiveView("all");
+    setActiveNoteMode("view");
+
+    navigate(
+      `/${encodeURIComponent(folderName)}/${folderId}/${encodeURIComponent(note.title)}/${note.id}`,
+    );
+  };
 
   return (
     <div className="flex flex-col gap-2">
@@ -58,28 +73,7 @@ const RecentNotes: React.FC = () => {
               className={`group flex items-center gap-2 w-full h-12.5 px-1 py-1 rounded-md cursor-pointer transition-all ${
                 isActive ? "bg-(--accent)" : "hover:bg-(--hover-bg)"
               }`}
-              onClick={() => {
-                const folderId = note.folderId ?? "";
-
-                const folder = folders.find(
-                  (f) => f.id === note.folderId
-                );
-
-                const folderName = folder?.name || "Unknown Folder";
-
-                setSelectedFolder({
-                  id: folderId,
-                  name: folderName,
-                });
-
-                setSelectedNoteId(note.id);
-                setActiveView("all");
-                setActiveNoteMode("view");
-
-                navigate(
-                  `/${encodeURIComponent(folderName)}/${folderId}/${encodeURIComponent(note.title)}/${note.id}`
-                );
-              }}
+              onClick={() => handleClick(note)}
             >
               <FileText
                 className={`w-6 h-6 ${

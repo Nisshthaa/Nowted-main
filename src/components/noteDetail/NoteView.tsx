@@ -9,35 +9,138 @@ import {
   Trash,
 } from "lucide-react";
 import { useEffect, useRef, useState, useCallback } from "react";
+import { useLocation } from "react-router-dom";
 import type { FullNote } from "../types/dataTypes";
-import { deleteNote, getNotesData, updateNote } from "../../api/noteAPI";
+import {
+  deleteNote,
+  getNotesData,
+  updateNote,
+  createNote,
+} from "../../api/noteAPI";
 import { useAppState } from "../../state/useAppState";
-import NoteForm from "./NoteForm";
 import { showConfirm, showError, showSuccess } from "../utils/notifications";
 import RestoreNote from "./RestoreNote";
 import { NoteViewSkeleton } from "../Loader/LoadData";
-import { useParams, useNavigate, useLocation } from "react-router-dom";
 
 const NoteView: React.FC = () => {
-  const navigate = useNavigate();
   const location = useLocation();
-  const {
-    selectedNoteId,
-    activeNoteMode,
-    setRefreshNotes,
-    setActiveNoteMode,
-    setSelectedNoteId,
-  } = useAppState();
+  const isCreateRoute = location.pathname.endsWith("/create");
 
   const [fullNote, setfullNote] = useState<FullNote | null>(null);
   const [loadingNote, setLoadingNote] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
+
   const menuRef = useRef<HTMLDivElement | null>(null);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const noteIdRef = useRef<string | null>(null);
 
-  const { noteId } = useParams();
+  const {
+    selectedNoteId,
+    activeNoteMode,
+    addNoteToList,
+    setActiveNoteMode,
+    setSelectedNoteId,
+    updateNoteInList,
+  } = useAppState();
+
+  //close menu
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowMenu(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    const id = selectedNoteId;
+
+    if (!id) return;
+
+    const inSpecialView =
+      location.pathname.startsWith("/favorites") ||
+      location.pathname.startsWith("/trash") ||
+      location.pathname.startsWith("/archived");
+
+    const fetchNotes = async () => {
+      try {
+        setLoadingNote(true);
+        setfullNote(null);
+
+        const res = await getNotesData(id);
+        const note = res.data.note;
+        setfullNote(note);
+        noteIdRef.current = note.id;
+
+        if (!inSpecialView) {
+          if (note.deletedAt) {
+            setActiveNoteMode("restore");
+          } else if (activeNoteMode === "restore") {
+            setActiveNoteMode("view");
+          }
+        }
+      } catch (err) {
+        console.log(err);
+      } finally {
+        setLoadingNote(false);
+      }
+    };
+
+    fetchNotes();
+  }, [selectedNoteId, activeNoteMode, location.pathname]);
+
+  const debouncedSave = useCallback(
+    (data: { title?: string; content?: string; preview?: string }) => {
+      if (debounceTimer.current) {
+        clearTimeout(debounceTimer.current);
+      }
+
+      debounceTimer.current = setTimeout(async () => {
+        try {
+          if (!noteIdRef.current) {
+            const pathParts = location.pathname.split("/").filter(Boolean);
+            const folderId = pathParts[1];
+
+            if (!folderId) return;
+
+            const res = await createNote({
+              title: data.title || "",
+              content: data.content || "",
+              folderId,
+            });
+
+            const newId = res.data.id;
+            noteIdRef.current = newId;
+
+            const newNote = {
+              id: newId,
+              title: data.title || "",
+              content: data.content || "",
+              preview: (data.content || "").slice(0, 50),
+              createdAt: new Date().toISOString(),
+              isFavorite: false,
+              isArchived: false,
+            };
+
+            setfullNote((prev) => (prev ? { ...prev, id: newId } : prev));
+
+            addNoteToList(newNote);
+            return;
+          }
+
+          await updateNote(noteIdRef.current, data);
+
+          updateNoteInList(noteIdRef.current, data);
+        } catch (err) {
+          console.error(err);
+        }
+      }, 400);
+    },
+    [updateNoteInList, location.pathname],
+  );
 
   const handleArchive = async () => {
     if (!fullNote) return;
@@ -47,10 +150,9 @@ const NoteView: React.FC = () => {
       await updateNote(fullNote.id, { isArchived: updatedValue });
 
       setShowMenu(false);
-      setRefreshNotes((prev) => !prev);
-      setActiveNoteMode("view");
-
+      updateNoteInList(fullNote.id, { isArchived: updatedValue });
       setSelectedNoteId(null);
+      setActiveNoteMode("view");
 
       showSuccess(updatedValue ? "Note Archived!" : "Note Unarchived!");
     } catch {
@@ -73,8 +175,8 @@ const NoteView: React.FC = () => {
         );
 
         setShowMenu(false);
-        setRefreshNotes((prev) => !prev);
-
+        updateNoteInList(fullNote.id, { deletedAt: deletedAtTime });
+        setSelectedNoteId(fullNote.id);
         setActiveNoteMode("restore");
 
         showSuccess("Moved to Trash!");
@@ -96,13 +198,8 @@ const NoteView: React.FC = () => {
       );
 
       setShowMenu(false);
-      setRefreshNotes((prev) => !prev);
-      setActiveNoteMode("view");
-
-      if (!updatedValue && location.pathname.includes("/favorites")) {
-        setSelectedNoteId(null);
-        navigate("/favorites");
-      }
+      updateNoteInList(fullNote.id, { isFavorite: updatedValue });
+      setSelectedNoteId(fullNote.id);
 
       showSuccess(
         updatedValue ? "Added to Favorites!" : "Removed from Favorites!",
@@ -117,85 +214,27 @@ const NoteView: React.FC = () => {
     setShowMenu(false);
     setActiveNoteMode("restore");
   };
-
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setShowMenu(false);
-      }
-    };
+    if (activeNoteMode === "create" || isCreateRoute) {
+      setfullNote({
+        id: "",
+        title: "",
+        content: "",
+        createdAt: new Date().toISOString(),
+      } as FullNote);
 
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+      noteIdRef.current = null;
+    }
+  }, [activeNoteMode, isCreateRoute]);
 
-  useEffect(() => {
-    const id = noteId || selectedNoteId;
+  const parts = location.pathname.split("/").filter(Boolean);
+  const folderName = decodeURIComponent(parts[0] || "");
 
-    if (!id) return;
-
-    const fetchNotes = async () => {
-      try {
-        setLoadingNote(true);
-        setfullNote(null);
-
-        const res = await getNotesData(id);
-        const note = res.data.note;
-        setfullNote(note);
-        noteIdRef.current = note.id;
-
-        if (note.deletedAt) {
-          setActiveNoteMode("restore");
-        } else if (activeNoteMode === "restore") {
-          setActiveNoteMode("view");
-        }
-      } catch (err) {
-        console.log(err);
-      } finally {
-        setLoadingNote(false);
-      }
-    };
-
-    fetchNotes();
-  }, [noteId, selectedNoteId, activeNoteMode, setActiveNoteMode]);
-
-  const debouncedSave = useCallback(
-    (data: { title?: string; content?: string }) => {
-      if (debounceTimer.current) {
-        clearTimeout(debounceTimer.current);
-      }
-
-      debounceTimer.current = setTimeout(async () => {
-        if (noteIdRef.current) {
-          try {
-            setIsSaving(true);
-            await updateNote(noteIdRef.current, data);
-            setRefreshNotes((prev) => !prev);
-          } catch (err) {
-            console.error(err);
-          } finally {
-            setIsSaving(false);
-          }
-        }
-      }, 1500);
-    },
-    [setRefreshNotes],
-  );
-
-  if (activeNoteMode === "create") return <NoteForm />;
-
-  if (location.pathname.includes("/create")) return <NoteForm />;
-
-  if (
-    activeNoteMode === "restore" &&
-    fullNote &&
-    fullNote.deletedAt &&
-    (noteId || selectedNoteId)
-  ) {
+  if (fullNote && fullNote.deletedAt && selectedNoteId) {
     return <RestoreNote noteId={fullNote.id} noteTitle={fullNote.title} />;
   }
 
-  if (!selectedNoteId) {
+  if (!selectedNoteId && activeNoteMode !== "create") {
     return (
       <div className="flex flex-col items-center justify-center h-screen gap-4 bg-(--sidebar-bg)">
         <FileText className="w-20 h-20 text-(--text-primary)" strokeWidth={1} />
@@ -229,13 +268,18 @@ const NoteView: React.FC = () => {
         <div className="flex justify-between items-start">
           <input
             className="text-(--text-primary) text-3xl font-semibold bg-transparent outline-none"
+            placeholder={activeNoteMode === "create" ? "Enter title..." : ""}
             value={fullNote.title}
             onChange={(e) => {
               const newTitle = e.target.value;
               setfullNote((prev) =>
                 prev ? { ...prev, title: newTitle } : prev,
               );
-              debouncedSave({ title: newTitle });
+              debouncedSave({
+                title: newTitle,
+                content: fullNote?.content || "",
+                preview: (fullNote?.content || "").slice(0, 50),
+              });
             }}
           />
 
@@ -326,43 +370,25 @@ const NoteView: React.FC = () => {
             </div>
 
             <p className="text-(--text-primary)">
-              {fullNote.folder?.name || "Unknown Folder"}
+              {fullNote.folder?.name || folderName}
             </p>
           </div>
-
-          {isSaving && (
-            <div className="flex items-center gap-3 p-4 rounded-lg bg-(--card-bg) border border-(--border-color)">
-              <div className="flex gap-1.5">
-                <div
-                  className="w-3 h-3 bg-(--accent) rounded-full animate-bounce"
-                  style={{ animationDelay: "0ms" }}
-                ></div>
-                <div
-                  className="w-3 h-3 bg-(--accent) rounded-full animate-bounce"
-                  style={{ animationDelay: "150ms" }}
-                ></div>
-                <div
-                  className="w-3 h-3 bg-(--accent) rounded-full animate-bounce"
-                  style={{ animationDelay: "300ms" }}
-                ></div>
-              </div>
-              <p className="text-(--text-primary) text-base font-semibold">
-                Saving...
-              </p>
-            </div>
-          )}
         </div>
       </div>
 
       <textarea
         className="flex-1 w-full bg-(--sidebar-bg) text-(--text-primary) text-s  outline-none resize-none"
+        placeholder={activeNoteMode === "create" ? "Write your note..." : ""}
         value={fullNote.content}
         onChange={(e) => {
           const newContent = e.target.value;
           setfullNote((prev) =>
             prev ? { ...prev, content: newContent } : prev,
           );
-          debouncedSave({ content: newContent });
+          debouncedSave({
+            content: newContent,
+            preview: newContent.slice(0, 50),
+          });
         }}
       />
     </div>

@@ -8,16 +8,13 @@ import {
   Pencil,
   Check,
 } from "lucide-react";
-
 import {
   getFoldersData,
   createFolder,
   deleteFolder,
   updateFolder,
 } from "../../api/folderAPI";
-
 import { useNavigate, useLocation } from "react-router-dom";
-
 import { useAppState } from "../../state/useAppState";
 import { showError, showSuccess } from "../utils/notifications";
 import type { Folder as FolderType } from "../types/dataTypes";
@@ -34,28 +31,23 @@ const FolderList: React.FC = () => {
   const location = useLocation();
 
   const {
-    setSelectedFolder,
     setActiveNoteMode,
     folders,
+    
     setFolders,
     setSelectedNoteId,
     setSearchText,
     setActiveView,
-    selectedFolder,
   } = useAppState();
 
+  //fetch folders
   useEffect(() => {
     const getFolders = async () => {
       try {
         setLoadingFolders(true);
         const response = await getFoldersData();
         const foldersData = response.data.folders;
-
         setFolders(foldersData);
-
-        if (foldersData[0]?.id) {
-          setSelectedFolder(foldersData[0]);
-        }
       } catch (err) {
         console.log(err);
       } finally {
@@ -64,22 +56,31 @@ const FolderList: React.FC = () => {
     };
 
     getFolders();
-  }, [setFolders, setSelectedFolder]);
+  }, [ setFolders]);
 
- 
+  // Open first folder by default
   useEffect(() => {
     if (folders.length > 0 && location.pathname === "/") {
-      navigate(`/${encodeURIComponent(folders[0].name)}/${folders[0].id}`);
+      const firstFolder = folders[0];
+      navigate(`/${encodeURIComponent(firstFolder.name)}/${firstFolder.id}`);
     }
-  }, [folders, location.pathname, navigate]);
+  }, [folders, navigate, location.pathname]);
 
-  useEffect(() => {
-    if (selectedFolder && !location.pathname.includes(selectedFolder.id)) {
-      navigate(`/${encodeURIComponent(selectedFolder.name)}/${selectedFolder.id}`);
+  const getActiveFolderId = () => {
+    const isSpecialView =
+      location.pathname.startsWith("/favorites") ||
+      location.pathname.startsWith("/trash") ||
+      location.pathname.startsWith("/archived");
+    if (isSpecialView) return null;
+
+    const pathParts = location.pathname.split("/").filter(Boolean);
+    if (pathParts.length >= 2) {
+      return pathParts[1];
     }
-  }, [selectedFolder, navigate, location.pathname]);
+    return null;
+  };
 
-  const filteredFolders = folders;
+  //folder creation
 
   const handleCreateFolder = async () => {
     if (!newFolderName.trim()) return;
@@ -94,6 +95,8 @@ const FolderList: React.FC = () => {
 
       setNewFolderName("");
       setIsCreating(false);
+      setSelectedNoteId(null);
+      setActiveNoteMode("view");
 
       const newFolder = updatedFolders[0];
       navigate(`/${encodeURIComponent(newFolder.name)}/${newFolder.id}`);
@@ -105,6 +108,7 @@ const FolderList: React.FC = () => {
     }
   };
 
+  //rename folder
   const handleEditClick = (folder: FolderType) => {
     setEditingFolderId(folder.id);
     setEditedName(folder.name);
@@ -145,7 +149,6 @@ const FolderList: React.FC = () => {
           navigate("/");
         }
       }
-
       setSelectedNoteId(null);
       setActiveNoteMode("view");
 
@@ -156,7 +159,8 @@ const FolderList: React.FC = () => {
     }
   };
 
-  if (loadingFolders) return <FolderListSkeleton count={Math.max(folders.length, 3)} />;
+  if (loadingFolders)
+    return <FolderListSkeleton count={Math.max(folders.length, 3)} />;
 
   return (
     <div className="flex flex-col flex-1 gap-4 min-h-0  ">
@@ -166,7 +170,7 @@ const FolderList: React.FC = () => {
         </p>
 
         <FolderPlus
-          className="w-6 h-6 ursor-pointer text-(--text-heading)"
+          className="w-6 h-6 cursor-pointer text-(--text-heading)"
           onClick={() => {
             setIsCreating((prev) => !prev);
             setNewFolderName("");
@@ -175,8 +179,6 @@ const FolderList: React.FC = () => {
       </div>
 
       <div className="flex flex-col flex-1 gap-3 overflow-y-auto min-h-0">
-        {loadingFolders && <FolderListSkeleton count={Math.max(folders.length, 3)} />}
-
         {!loadingFolders && isCreating && (
           <div className="flex justify-between items-center  ">
             <input
@@ -196,17 +198,17 @@ const FolderList: React.FC = () => {
         )}
 
         {!loadingFolders &&
-          filteredFolders.map((folder) => {
-            const isActive = selectedFolder?.id === folder.id;
+          folders.map((folder) => {
+            const activeFolderId = getActiveFolderId();
+            const isActive = activeFolderId === folder.id;
 
             return (
               <div
                 key={folder.id}
-                className={`group flex items-center gap-3 w-full h-18.5 py-1 px-1 rounded-md cursor-pointer transition-all ${
+                className={`group flex items-center gap-3 w-full h-11.5 px-1 py-2 rounded-md cursor-pointer transition-all ${
                   isActive ? "bg-(--hover-bg)" : "hover:bg-(--hover-bg)"
                 }`}
                 onClick={() => {
-                  setSelectedFolder(folder);
                   setSelectedNoteId(null);
                   setActiveNoteMode("view");
                   setSearchText("");
@@ -221,7 +223,7 @@ const FolderList: React.FC = () => {
                   <Folder className="w-6 h-6 text-(--text-secondary) group-hover:text-(--text-primary)" />
                 )}
 
-                <div className="flex justify-between w-full">
+                <div className="flex justify-between w-full ">
                   {editingFolderId === folder.id ? (
                     <input
                       value={editedName}

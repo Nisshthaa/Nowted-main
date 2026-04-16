@@ -3,7 +3,6 @@ import { AppState } from "./AppState";
 import type { Folder, Note } from "../components/types/dataTypes";
 
 export const StateProvider = ({ children }: { children: React.ReactNode }) => {
-  const [selectedFolder, setSelectedFolder] = useState<Folder | null>(null);
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
 
   const [activeNoteMode, setActiveNoteMode] = useState<
@@ -12,9 +11,6 @@ export const StateProvider = ({ children }: { children: React.ReactNode }) => {
 
   const [folders, setFolders] = useState<Folder[]>([]);
 
-  const [notes, setNotes] = useState<Note[]>([]);
-
-  const [refreshNotes, setRefreshNotes] = useState(false);
 
   const [activeView, setActiveView] = useState<
     "all" | "favorites" | "archived" | "trash" | null
@@ -24,31 +20,44 @@ export const StateProvider = ({ children }: { children: React.ReactNode }) => {
 
   const [searchResults, setSearchResults] = useState<Note[]>([]);
 
+const [notes, setNotes] = useState<Note[]>([]);
+
+const updateNoteInList = (noteId: string, data: Partial<Note>) => {
+  setNotes((prev) =>
+    prev.map((note) =>
+      note.id === noteId ? { ...note, ...data } : note
+    )
+  );
+};
+
+const addNoteToList = (note: Note) => {
+  setNotes((prev) => [note, ...prev]);
+};
+
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
 
   return (
     <AppState.Provider
       value={{
-        selectedFolder,
-        setSelectedFolder,
         selectedNoteId,
         setSelectedNoteId,
         activeNoteMode,
         setActiveNoteMode,
-        refreshNotes,
-        setRefreshNotes,
+
         activeView,
         setActiveView,
         folders,
         setFolders,
-        notes,
-        setNotes,
         searchText,
         setSearchText,
         searchResults,
         setSearchResults,
         showSearchDropdown,
         setShowSearchDropdown,
+        notes,
+  setNotes,
+  addNoteToList,
+        updateNoteInList
       }}
     >
       {children}

@@ -1,26 +1,14 @@
 import React, { useEffect, useRef, useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAppState } from "../../state/useAppState";
 import type { GetNotesParams, Note } from "../types/dataTypes";
 import { getNotes } from "../../api/noteAPI";
 import { NoteListSkeleton } from "../Loader/LoadData";
-import { useNavigate, useLocation } from "react-router-dom";
 
 const NotesList: React.FC = () => {
-  const {
-    refreshNotes,
-    activeView,
-    selectedFolder,
-    searchText,
-    setSelectedNoteId,
-    setActiveView,
-    setSelectedFolder,
-    setActiveNoteMode,
-    folders,
-    setSearchResults,
-    setShowSearchDropdown,
-  } = useAppState();
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  const [notes, setNotes] = useState<Note[]>([]);
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
@@ -30,9 +18,20 @@ const NotesList: React.FC = () => {
   const loadingRef = useRef(false);
   const pageRef = useRef(1);
   const hasMoreRef = useRef(true);
-  const navigate = useNavigate();
-  const location = useLocation();
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
 
+  const {
+    activeView,
+    searchText,
+    notes,
+    setNotes,
+    setSelectedNoteId,
+    setActiveView,
+    setActiveNoteMode,
+    folders,
+    setSearchResults,
+    setShowSearchDropdown,
+  } = useAppState();
 
   useEffect(() => {
     loadingRef.current = loading;
@@ -42,7 +41,7 @@ const NotesList: React.FC = () => {
     hasMoreRef.current = hasMore;
   }, [hasMore]);
 
-   
+  //search debounce
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedQuery(searchText.trim().toLowerCase());
@@ -51,30 +50,36 @@ const NotesList: React.FC = () => {
     return () => clearTimeout(timer);
   }, [searchText]);
 
+  //sync URL to activeView
   useEffect(() => {
-    if (location.pathname === "/favorites") {
+    if (location.pathname.startsWith("/favorites")) {
       setActiveView("favorites");
-      setSelectedFolder(null);
-    } else if (location.pathname === "/trash") {
+    } else if (location.pathname.startsWith("/trash")) {
       setActiveView("trash");
-      setSelectedFolder(null);
-    } else if (location.pathname === "/archived") {
+    } else if (location.pathname.startsWith("/archived")) {
       setActiveView("archived");
-      setSelectedFolder(null);
     } else {
-      const pathSegments = location.pathname.split("/").filter(Boolean);
-      if (pathSegments.length >= 2) {
-        const folderId = pathSegments[1];
-        const matchingFolder = folders.find((f) => f.id === folderId);
-        if (matchingFolder) {
-          setActiveView("all");
-          setSelectedFolder(matchingFolder);
-        }
-      }
+      setActiveView("all");
     }
-  }, [location.pathname, folders, setActiveView, setSelectedFolder]);
+  }, [location.pathname, setActiveView]);
 
-  
+
+  const getFolderIdFromUrl = () => {
+    const pathParts = location.pathname.split("/").filter(Boolean);
+    if (
+      pathParts.length >= 2 &&
+      !location.pathname.startsWith("/favorites") &&
+      !location.pathname.startsWith("/trash") &&
+      !location.pathname.startsWith("/archived")
+    ) {
+      return pathParts[1];
+    }
+    return null;
+  };
+
+  const folderIdFromUrl = getFolderIdFromUrl();
+
+  //show notes on the basis of filters
   const filters: GetNotesParams = (() => {
     if (activeView === "favorites") {
       return { favorite: true };
@@ -85,11 +90,28 @@ const NotesList: React.FC = () => {
     if (activeView === "trash") {
       return { deleted: "true" };
     }
-    if (selectedFolder) return { folderId: selectedFolder.id };
+    if (folderIdFromUrl) return { folderId: folderIdFromUrl };
     return {};
   })();
 
-  
+  //search on fav,archive or trash
+  const searchFilters: GetNotesParams = (() => {
+    if (activeView === "favorites") {
+      return { favorite: true };
+    }
+    if (activeView === "archived") {
+      return { archived: true };
+    }
+    if (activeView === "trash") {
+      return { deleted: "true" };
+    }
+    return {};
+  })();
+
+  const filtersKey = JSON.stringify(filters);
+  const searchFiltersKey = JSON.stringify(searchFilters);
+
+  //show search results
   useEffect(() => {
     const fetchSearchResults = async () => {
       if (!debouncedQuery.trim()) {
@@ -99,7 +121,10 @@ const NotesList: React.FC = () => {
       }
 
       try {
-        const res = await getNotes({ ...filters, search: debouncedQuery });
+        const res = await getNotes({
+          ...searchFilters,
+          search: debouncedQuery,
+        });
         const data = res.data.notes ?? [];
         setSearchResults(data);
         setShowSearchDropdown(true);
@@ -110,9 +135,7 @@ const NotesList: React.FC = () => {
     };
 
     fetchSearchResults();
-  }, [debouncedQuery, filters]);
-
-  const filtersKey = JSON.stringify(filters);
+  }, [debouncedQuery, searchFiltersKey]);
 
   useEffect(() => {
     if (debouncedQuery.trim()) return;
@@ -154,8 +177,9 @@ const NotesList: React.FC = () => {
     return () => {
       isActive = false;
     };
-  }, [refreshNotes, filtersKey, debouncedQuery]);
+  }, [filtersKey, debouncedQuery]);
 
+  //render notes with pagination
   useEffect(() => {
     if (debouncedQuery.trim()) return;
 
@@ -164,12 +188,18 @@ const NotesList: React.FC = () => {
 
     const observer = new IntersectionObserver(
       async (entries) => {
-        if (!entries[0].isIntersecting || loadingRef.current || !hasMoreRef.current) return;
+        if (
+          !entries[0].isIntersecting ||
+          loadingRef.current ||
+          !hasMoreRef.current
+        )
+          return;
 
-        setLoading(true);
+        setIsFetchingMore(true);
 
-    
-        const scrollContainer = currentRef.closest('.overflow-y-auto') as HTMLElement | null;
+        const scrollContainer = currentRef.closest(
+          ".overflow-y-auto",
+        ) as HTMLElement | null;
         const scrollPos = scrollContainer?.scrollTop ?? 0;
 
         try {
@@ -182,16 +212,15 @@ const NotesList: React.FC = () => {
 
           const data = res.data.notes ?? [];
 
-          
           setNotes((prev) => {
             const updated = [...prev, ...data];
-          
+
             setTimeout(() => {
               if (scrollContainer) {
                 scrollContainer.scrollTop = scrollPos;
               }
             }, 0);
-            
+
             return updated;
           });
 
@@ -203,7 +232,7 @@ const NotesList: React.FC = () => {
         } catch (err) {
           console.error(err);
         } finally {
-          setLoading(false);
+          setIsFetchingMore(false);
         }
       },
       { rootMargin: "100px" },
@@ -216,12 +245,76 @@ const NotesList: React.FC = () => {
     };
   }, [filtersKey, debouncedQuery]);
 
-  const displayedNotes = [...notes].sort((a, b) => {
+  const handleClick = (note: Note) => {
+    setSelectedNoteId(note.id);
+    const shouldSearchAllNotes = debouncedQuery !== "" && activeView === "all";
+
+    if (activeView !== "trash") {
+      setActiveNoteMode("view");
+    }
+
+    if (activeView === "favorites") {
+      navigate(`/favorites/${encodeURIComponent(note.title)}/${note.id}`);
+    } else if (activeView === "archived") {
+      navigate(`/archived/${encodeURIComponent(note.title)}/${note.id}`);
+    } else if (activeView === "trash") {
+      navigate(`/trash/${encodeURIComponent(note.title)}/${note.id}`);
+    } else if (folderIdFromUrl && !shouldSearchAllNotes) {
+      const notebook = folders.find((f) => f.id === folderIdFromUrl);
+      if (notebook) {
+        navigate(
+          `/${encodeURIComponent(notebook.name)}/${notebook.id}/${encodeURIComponent(note.title)}/${note.id}`,
+        );
+      }
+    } else if (activeView === "all") {
+      const noteFolder = folders.find((folder) => folder.id === note.folderId);
+      if (noteFolder) {
+        navigate(
+          `/${encodeURIComponent(noteFolder.name)}/${noteFolder.id}/${encodeURIComponent(note.title)}/${note.id}`,
+        );
+      }
+    }
+  };
+
+const displayedNotes = [...notes]
+  .filter((note) => {
+    if (activeView === "trash") return note.deletedAt;
+
+    if (activeView === "archived")
+      return note.isArchived && !note.deletedAt;
+
+    if (activeView === "favorites")
+      return note.isFavorite && !note.deletedAt && !note.isArchived;
+
+
+    return !note.deletedAt && !note.isArchived;
+  })
+  .sort((a, b) => {
     if (activeView === "trash" && a.deletedAt && b.deletedAt) {
-      return new Date(b.deletedAt).getTime() - new Date(a.deletedAt).getTime();
+      return (
+        new Date(b.deletedAt).getTime() -
+        new Date(a.deletedAt).getTime()
+      );
     }
     return 0;
-  });
+  })
+  .filter(
+    (note, index, self) =>
+      self.findIndex((n) => n.id === note.id) === index
+  );
+
+  const getFolderNameFromUrl = () => {
+    const pathParts = location.pathname.split("/").filter(Boolean);
+    if (
+      pathParts.length >= 1 &&
+      !location.pathname.startsWith("/favorites") &&
+      !location.pathname.startsWith("/trash") &&
+      !location.pathname.startsWith("/archived")
+    ) {
+      return decodeURIComponent(pathParts[0]);
+    }
+    return "Select Folder";
+  };
 
   return (
     <div className="flex flex-col w-100 h-screen p-4 gap-5 bg-(--panel-bg)">
@@ -233,7 +326,7 @@ const NotesList: React.FC = () => {
               ? "Archived"
               : activeView === "trash"
                 ? "Trash"
-                : selectedFolder?.name || "Select Folder"}
+                : getFolderNameFromUrl()}
         </h3>
       </div>
 
@@ -244,45 +337,7 @@ const NotesList: React.FC = () => {
           displayedNotes.map((note) => (
             <div
               key={note.id}
-              onClick={() => {
-                setSelectedNoteId(note.id);
-                const shouldSearchAllNotes =
-                  debouncedQuery !== "" && activeView === "all";
-
-                if (activeView !== "trash") {
-                  setActiveNoteMode("view");
-                }
-
-                if (selectedFolder && !shouldSearchAllNotes) {
-                  navigate(
-                    `/${encodeURIComponent(selectedFolder.name)}/${selectedFolder.id}/${encodeURIComponent(note.title)}/${note.id}`,
-                  );
-                } else if (activeView === "all") {
-                  const noteFolder = folders.find(
-                    (folder) => folder.id === note.folderId,
-                  );
-                  if (noteFolder) {
-                    setSelectedFolder(noteFolder);
-                    navigate(
-                      `/${encodeURIComponent(noteFolder.name)}/${noteFolder.id}/${encodeURIComponent(note.title)}/${note.id}`,
-                    );
-                  }
-                } else {
-                  if (activeView === "favorites") {
-                    navigate(
-                      `/favorites/${encodeURIComponent(note.title)}/${note.id}`,
-                    );
-                  } else if (activeView === "archived") {
-                    navigate(
-                      `/archived/${encodeURIComponent(note.title)}/${note.id}`,
-                    );
-                  } else if (activeView === "trash") {
-                    navigate(
-                      `/trash/${encodeURIComponent(note.title)}/${note.id}`,
-                    );
-                  }
-                }
-              }}
+              onClick={() => handleClick(note)}
               className="flex flex-col w-full h-21 p-3 gap-2 rounded-lg cursor-pointer transition-all duration-200 border border-(--border-color) bg-(--card-bg) hover:bg-(--hover-bg) "
             >
               <p className="font-semibold text-(--text-primary) text-[18px] truncate">
@@ -296,9 +351,11 @@ const NotesList: React.FC = () => {
                   {new Date(note.createdAt).toLocaleDateString("en-GB")}
                 </span>
                 <span className="text-(--text-secondary) text-m">
-                  {note.preview.length > 20
-                    ? note.preview.slice(0, 20) + "..."
-                    : note.preview}
+                  {note.preview
+                    ? note.preview.length > 20
+                      ? note.preview.slice(0, 20) + "..."
+                      : note.preview
+                    : ""}
                 </span>
               </div>
             </div>
@@ -310,8 +367,8 @@ const NotesList: React.FC = () => {
 
         <div ref={loaderRef} style={{ height: "20px" }} />
 
-        {loading && notes.length > 0 && (
-          <p className="text-center text-(--text-primary)">Loading...</p>
+        {isFetchingMore && hasMore && notes.length > 0 && (
+          <p className="text-center text-(--text-primary)">Loading more...</p>
         )}
 
         {!hasMore && notes.length > 0 && (

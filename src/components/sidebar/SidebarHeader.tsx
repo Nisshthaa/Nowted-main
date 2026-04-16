@@ -11,14 +11,12 @@ const SidebarHeader: React.FC = () => {
     setActiveNoteMode,
     searchText,
     setSearchText,
-    activeNoteMode,
-    selectedFolder,
+
     setSelectedNoteId,
     showSearchDropdown,
     setShowSearchDropdown,
     folders,
     setActiveView,
-    setSelectedFolder,
     searchResults,
     activeView,
   } = useAppState();
@@ -30,6 +28,7 @@ const SidebarHeader: React.FC = () => {
 
   const [theme, setTheme] = useState<"light" | "dark">("dark");
 
+  //get search text
   useEffect(() => {
     const init = () => {
       const params = new URLSearchParams(location.search);
@@ -39,15 +38,13 @@ const SidebarHeader: React.FC = () => {
         setSearchText(searchQuery);
         setSearch(true);
       } else {
-        if (search) {
-          setSearch(false);
-          setSearchText("");
-        }
+        setSearch(false);
       }
     };
     init();
-  }, [location.search]);
+  }, [location.search, setSearchText]);
 
+  //get and set theme
   useEffect(() => {
     const init = () => {
       const saved = localStorage.getItem("theme") as "light" | "dark";
@@ -76,6 +73,7 @@ const SidebarHeader: React.FC = () => {
     }
   };
 
+  //show search result
   const handleSearchResultClick = (note: Note) => {
     setSelectedNoteId(note.id);
     setActiveNoteMode("view");
@@ -89,7 +87,6 @@ const SidebarHeader: React.FC = () => {
     } else {
       const noteFolder = folders.find((folder) => folder.id === note.folderId);
       if (noteFolder) {
-        setSelectedFolder(noteFolder);
         setActiveView("all");
         navigate(
           `/${encodeURIComponent(noteFolder.name)}/${noteFolder.id}/${encodeURIComponent(note.title)}/${note.id}`,
@@ -102,6 +99,7 @@ const SidebarHeader: React.FC = () => {
     setSearch(false);
   };
 
+  //handle search url
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
     setSearchText(query);
@@ -206,23 +204,25 @@ const SidebarHeader: React.FC = () => {
             className=" flex items-center justify-center gap-2 w-full h-10 bg-(--btn-bg) hover:bg-(--btn-hover) active:scale-[0.98] text-(--text-primary) text-[18px] font-medium rounded-md transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer"
             style={{ fontFamily: "var(--font-primary)" }}
             onClick={() => {
-              if (!selectedFolder) return;
+              const isSpecialView =
+                location.pathname.startsWith("/favorites") ||
+                location.pathname.startsWith("/trash") ||
+                location.pathname.startsWith("/archived");
+              if (isSpecialView) return;
+
+              const pathParts = location.pathname.split("/").filter(Boolean);
+              if (pathParts.length < 2) return;
+
+              const folderName = decodeURIComponent(pathParts[0]);
+              const folderId = pathParts[1];
 
               setSelectedNoteId(null);
 
-              const folderPath = `/${selectedFolder.name}/${selectedFolder.id}`;
-              const createPath = `${folderPath}/create`;
-
-              const onCreatePath = location.pathname === createPath;
-
-              if (activeNoteMode === "create" || onCreatePath) {
-                setActiveNoteMode("view");
-                navigate(folderPath);
-                return;
-              }
-
+              setSelectedNoteId(null);
               setActiveNoteMode("create");
-              navigate(createPath);
+
+              
+            navigate(`/${folderName}/${folderId}/create`);
             }}
           >
             <Plus className="h-6 w-6" /> New Note
