@@ -24,7 +24,6 @@ import { NoteViewSkeleton } from "../Loader/LoadData";
 
 const NoteView: React.FC = () => {
   const location = useLocation();
-  const isCreateRoute = location.pathname.endsWith("/create");
 
   const [fullNote, setfullNote] = useState<FullNote | null>(null);
   const [loadingNote, setLoadingNote] = useState(false);
@@ -105,6 +104,9 @@ const NoteView: React.FC = () => {
             const folderId = pathParts[1];
 
             if (!folderId) return;
+
+            // Only create note if title has content
+            if (!data.title || !data.title.trim()) return;
 
             const res = await createNote({
               title: data.title || "",
@@ -214,18 +216,20 @@ const NoteView: React.FC = () => {
     setShowMenu(false);
     setActiveNoteMode("restore");
   };
+
+  // Initialize empty form for create mode
   useEffect(() => {
-    if (activeNoteMode === "create" || isCreateRoute) {
+    const isCreateRoute = location.pathname.endsWith("/create");
+    if ((activeNoteMode === "create" || isCreateRoute) && !selectedNoteId) {
       setfullNote({
         id: "",
         title: "",
         content: "",
         createdAt: new Date().toISOString(),
       } as FullNote);
-
       noteIdRef.current = null;
     }
-  }, [activeNoteMode, isCreateRoute]);
+  }, [activeNoteMode, location.pathname, selectedNoteId]);
 
   const parts = location.pathname.split("/").filter(Boolean);
   const folderName = decodeURIComponent(parts[0] || "");

@@ -118,6 +118,26 @@ const SidebarHeader: React.FC = () => {
     }
   };
 
+  //add note
+  const addNote = () => {
+    const isSpecialView =
+      location.pathname.startsWith("/favorites") ||
+      location.pathname.startsWith("/trash") ||
+      location.pathname.startsWith("/archived");
+    if (isSpecialView) return;
+
+    const pathParts = location.pathname.split("/").filter(Boolean);
+    if (pathParts.length < 2) return;
+
+    const folderName = decodeURIComponent(pathParts[0]);
+    const folderId = pathParts[1];
+
+    setSelectedNoteId(null);
+    setActiveNoteMode("create");
+
+    navigate(`/${folderName}/${folderId}/create`);
+  };
+
   return (
     <div className="flex flex-col gap-4  ">
       <div className="flex justify-between items-center  h-13 ">
@@ -203,27 +223,7 @@ const SidebarHeader: React.FC = () => {
           <button
             className=" flex items-center justify-center gap-2 w-full h-10 bg-(--btn-bg) hover:bg-(--btn-hover) active:scale-[0.98] text-(--text-primary) text-[18px] font-medium rounded-md transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer"
             style={{ fontFamily: "var(--font-primary)" }}
-            onClick={() => {
-              const isSpecialView =
-                location.pathname.startsWith("/favorites") ||
-                location.pathname.startsWith("/trash") ||
-                location.pathname.startsWith("/archived");
-              if (isSpecialView) return;
-
-              const pathParts = location.pathname.split("/").filter(Boolean);
-              if (pathParts.length < 2) return;
-
-              const folderName = decodeURIComponent(pathParts[0]);
-              const folderId = pathParts[1];
-
-              setSelectedNoteId(null);
-
-              setSelectedNoteId(null);
-              setActiveNoteMode("create");
-
-              
-            navigate(`/${folderName}/${folderId}/create`);
-            }}
+            onClick={addNote}
           >
             <Plus className="h-6 w-6" /> New Note
           </button>
