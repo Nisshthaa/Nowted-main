@@ -14,7 +14,7 @@ const App: React.FC = () => {
         <Route path="/" element={<AppLayout />}>
           <Route index element={<NoteView />} />
 
-          <Route path="create" element={<NoteView />} />
+          {/* <Route path="create" element={<NoteView />} /> */}
 
           <Route path="favorites" element={<NoteView />} />
           <Route path="favorites/:noteName/:noteId" element={<NoteView />} />
@@ -26,7 +26,7 @@ const App: React.FC = () => {
           <Route path="archived/:noteName/:noteId" element={<NoteView />} />
 
           <Route path=":folderName/:folderId" element={<NoteView />} />
-          <Route path=":folderName/:folderId/create" element={<NoteView />} />
+        
           <Route
             path=":folderName/:folderId/:noteName/:noteId"
             element={<NoteView />}

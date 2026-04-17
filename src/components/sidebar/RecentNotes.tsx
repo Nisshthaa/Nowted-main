@@ -4,21 +4,15 @@ import type { Note } from "../types/dataTypes";
 import { getRecentFolders } from "../../api/folderAPI";
 import { useAppState } from "../../state/useAppState";
 import { RecentNotesSkeleton } from "../Loader/LoadData";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const RecentNotes: React.FC = () => {
   const [notes, setNotes] = useState<Note[]>([]);
   const [loadingRecent, setLoadingRecent] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const {
-    selectedNoteId,
-    folders,
-    setSelectedNoteId,
-    setActiveView,
-    setActiveNoteMode,
-  
-  } = useAppState();
+  const { folders } = useAppState();
 
   //fetch recent notes
   useEffect(() => {
@@ -38,18 +32,11 @@ const RecentNotes: React.FC = () => {
   }, []);
 
   const handleClick = (note: Note) => {
-    const folderId = note.folderId ?? "";
-
     const folder = folders.find((f) => f.id === note.folderId);
-
     const folderName = folder?.name || "Unknown Folder";
 
-    setSelectedNoteId(note.id);
-    setActiveView("all");
-    setActiveNoteMode("view");
-
     navigate(
-      `/${encodeURIComponent(folderName)}/${folderId}/${encodeURIComponent(note.title)}/${note.id}`,
+      `/${encodeURIComponent(folderName)}/${note.folderId}/${encodeURIComponent(note.title)}/${note.id}`,
     );
   };
 
@@ -65,7 +52,7 @@ const RecentNotes: React.FC = () => {
 
       {!loadingRecent &&
         notes.map((note) => {
-          const isActive = selectedNoteId === note.id;
+          const isActive = location.pathname.includes(note.id);
 
           return (
             <div

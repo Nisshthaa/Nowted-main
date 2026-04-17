@@ -30,15 +30,7 @@ const FolderList: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const {
-    setActiveNoteMode,
-    folders,
-    
-    setFolders,
-    setSelectedNoteId,
-    setSearchText,
-    setActiveView,
-  } = useAppState();
+  const { folders, setFolders, setSearchText } = useAppState();
 
   //fetch folders
   useEffect(() => {
@@ -56,7 +48,7 @@ const FolderList: React.FC = () => {
     };
 
     getFolders();
-  }, [ setFolders]);
+  }, [setFolders]);
 
   // Open first folder by default
   useEffect(() => {
@@ -66,19 +58,13 @@ const FolderList: React.FC = () => {
     }
   }, [folders, navigate, location.pathname]);
 
-  const getActiveFolderId = () => {
-    const isSpecialView =
-      location.pathname.startsWith("/favorites") ||
-      location.pathname.startsWith("/trash") ||
-      location.pathname.startsWith("/archived");
-    if (isSpecialView) return null;
-
-    const pathParts = location.pathname.split("/").filter(Boolean);
-    if (pathParts.length >= 2) {
-      return pathParts[1];
-    }
-    return null;
-  };
+  const pathParts = location.pathname.split("/").filter(Boolean);
+  const activeFolderId =
+    !location.pathname.startsWith("/favorites") &&
+    !location.pathname.startsWith("/trash") &&
+    !location.pathname.startsWith("/archived")
+      ? pathParts[1]
+      : null;
 
   //folder creation
 
@@ -95,8 +81,6 @@ const FolderList: React.FC = () => {
 
       setNewFolderName("");
       setIsCreating(false);
-      setSelectedNoteId(null);
-      setActiveNoteMode("view");
 
       const newFolder = updatedFolders[0];
       navigate(`/${encodeURIComponent(newFolder.name)}/${newFolder.id}`);
@@ -149,8 +133,6 @@ const FolderList: React.FC = () => {
           navigate("/");
         }
       }
-      setSelectedNoteId(null);
-      setActiveNoteMode("view");
 
       showSuccess("Folder deleted successfully!");
     } catch (err) {
@@ -199,7 +181,6 @@ const FolderList: React.FC = () => {
 
         {!loadingFolders &&
           folders.map((folder) => {
-            const activeFolderId = getActiveFolderId();
             const isActive = activeFolderId === folder.id;
 
             return (
@@ -209,10 +190,7 @@ const FolderList: React.FC = () => {
                   isActive ? "bg-(--hover-bg)" : "hover:bg-(--hover-bg)"
                 }`}
                 onClick={() => {
-                  setSelectedNoteId(null);
-                  setActiveNoteMode("view");
                   setSearchText("");
-                  setActiveView("all");
 
                   navigate(`/${encodeURIComponent(folder.name)}/${folder.id}`);
                 }}

@@ -9,21 +9,20 @@ import {
   Trash,
 } from "lucide-react";
 import { useEffect, useRef, useState, useCallback } from "react";
-import { useLocation } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import type { FullNote } from "../types/dataTypes";
-import {
-  deleteNote,
-  getNotesData,
-  updateNote,
-  createNote,
-} from "../../api/noteAPI";
+import { deleteNote, getNotesData, updateNote } from "../../api/noteAPI";
 import { useAppState } from "../../state/useAppState";
 import { showConfirm, showError, showSuccess } from "../utils/notifications";
 import RestoreNote from "./RestoreNote";
 import { NoteViewSkeleton } from "../Loader/LoadData";
 
 const NoteView: React.FC = () => {
-  const location = useLocation();
+  const params = useParams();
+  const navigate = useNavigate();
+  const noteId = params.noteId;
+  const folderName = params.folderName;
+  const folderId = params.folderId;
 
   const [fullNote, setfullNote] = useState<FullNote | null>(null);
   const [loadingNote, setLoadingNote] = useState(false);
@@ -31,16 +30,8 @@ const NoteView: React.FC = () => {
 
   const menuRef = useRef<HTMLDivElement | null>(null);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const noteIdRef = useRef<string | null>(null);
 
-  const {
-    selectedNoteId,
-    activeNoteMode,
-    addNoteToList,
-    setActiveNoteMode,
-    setSelectedNoteId,
-    updateNoteInList,
-  } = useAppState();
+  const { updateNoteInList } = useAppState();
 
   //close menu
   useEffect(() => {
@@ -55,32 +46,16 @@ const NoteView: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const id = selectedNoteId;
-
-    if (!id) return;
-
-    const inSpecialView =
-      location.pathname.startsWith("/favorites") ||
-      location.pathname.startsWith("/trash") ||
-      location.pathname.startsWith("/archived");
+    if (!noteId) return;
 
     const fetchNotes = async () => {
       try {
         setLoadingNote(true);
         setfullNote(null);
 
-        const res = await getNotesData(id);
+        const res = await getNotesData(noteId);
         const note = res.data.note;
         setfullNote(note);
-        noteIdRef.current = note.id;
-
-        if (!inSpecialView) {
-          if (note.deletedAt) {
-            setActiveNoteMode("restore");
-          } else if (activeNoteMode === "restore") {
-            setActiveNoteMode("view");
-          }
-        }
       } catch (err) {
         console.log(err);
       } finally {
@@ -89,7 +64,7 @@ const NoteView: React.FC = () => {
     };
 
     fetchNotes();
-  }, [selectedNoteId, activeNoteMode, location.pathname]);
+  }, [noteId]);
 
   const debouncedSave = useCallback(
     (data: { title?: string; content?: string; preview?: string }) => {
@@ -99,49 +74,16 @@ const NoteView: React.FC = () => {
 
       debounceTimer.current = setTimeout(async () => {
         try {
-          if (!noteIdRef.current) {
-            const pathParts = location.pathname.split("/").filter(Boolean);
-            const folderId = pathParts[1];
+          if (!noteId) return;
+          await updateNote(noteId, data);
 
-            if (!folderId) return;
-
-            // Only create note if title has content
-            if (!data.title || !data.title.trim()) return;
-
-            const res = await createNote({
-              title: data.title || "",
-              content: data.content || "",
-              folderId,
-            });
-
-            const newId = res.data.id;
-            noteIdRef.current = newId;
-
-            const newNote = {
-              id: newId,
-              title: data.title || "",
-              content: data.content || "",
-              preview: (data.content || "").slice(0, 50),
-              createdAt: new Date().toISOString(),
-              isFavorite: false,
-              isArchived: false,
-            };
-
-            setfullNote((prev) => (prev ? { ...prev, id: newId } : prev));
-
-            addNoteToList(newNote);
-            return;
-          }
-
-          await updateNote(noteIdRef.current, data);
-
-          updateNoteInList(noteIdRef.current, data);
+          updateNoteInList(noteId, data);
         } catch (err) {
           console.error(err);
         }
       }, 400);
     },
-    [updateNoteInList, location.pathname],
+    [updateNoteInList, noteId],
   );
 
   const handleArchive = async () => {
@@ -151,17 +93,27 @@ const NoteView: React.FC = () => {
       const updatedValue = !fullNote.isArchived;
       await updateNote(fullNote.id, { isArchived: updatedValue });
 
-      setShowMenu(false);
+      setfullNote((prev) =>
+        prev ? { ...prev, isArchived: updatedValue } : prev,
+      );
+
       updateNoteInList(fullNote.id, { isArchived: updatedValue });
-      setSelectedNoteId(null);
-      setActiveNoteMode("view");
+      setShowMenu(false);
+
+      if (!updatedValue && location.pathname.startsWith("/archived")) {
+        navigate("/archived");
+        return;
+      }
+
+      if (updatedValue && folderId && folderName) {
+        navigate(`/${encodeURIComponent(folderName)}/${folderId}`);
+      }
 
       showSuccess(updatedValue ? "Note Archived!" : "Note Unarchived!");
     } catch {
       showError("Failed to update archive");
     }
   };
-
   const handleDelete = () => {
     if (!fullNote) return;
 
@@ -175,11 +127,9 @@ const NoteView: React.FC = () => {
         setfullNote((prev) =>
           prev ? { ...prev, deletedAt: deletedAtTime } : prev,
         );
-
         setShowMenu(false);
         updateNoteInList(fullNote.id, { deletedAt: deletedAtTime });
-        setSelectedNoteId(fullNote.id);
-        setActiveNoteMode("restore");
+        
 
         showSuccess("Moved to Trash!");
       } catch {
@@ -194,14 +144,16 @@ const NoteView: React.FC = () => {
     try {
       const updatedValue = !fullNote.isFavorite;
       await updateNote(fullNote.id, { isFavorite: updatedValue });
-
       setfullNote((prev) =>
         prev ? { ...prev, isFavorite: updatedValue } : prev,
       );
-
-      setShowMenu(false);
       updateNoteInList(fullNote.id, { isFavorite: updatedValue });
-      setSelectedNoteId(fullNote.id);
+      setShowMenu(false);
+
+      if (!updatedValue && location.pathname.startsWith("/favorites")) {
+        navigate("/favorites");
+        return;
+      }
 
       showSuccess(
         updatedValue ? "Added to Favorites!" : "Removed from Favorites!",
@@ -214,31 +166,15 @@ const NoteView: React.FC = () => {
   const handleRestore = () => {
     if (!fullNote) return;
     setShowMenu(false);
-    setActiveNoteMode("restore");
   };
 
-  // Initialize empty form for create mode
-  useEffect(() => {
-    const isCreateRoute = location.pathname.endsWith("/create");
-    if ((activeNoteMode === "create" || isCreateRoute) && !selectedNoteId) {
-      setfullNote({
-        id: "",
-        title: "",
-        content: "",
-        createdAt: new Date().toISOString(),
-      } as FullNote);
-      noteIdRef.current = null;
-    }
-  }, [activeNoteMode, location.pathname, selectedNoteId]);
-
-  const parts = location.pathname.split("/").filter(Boolean);
-  const folderName = decodeURIComponent(parts[0] || "");
-
-  if (fullNote && fullNote.deletedAt && selectedNoteId) {
+  if (noteId && fullNote?.deletedAt) {
     return <RestoreNote noteId={fullNote.id} noteTitle={fullNote.title} />;
   }
 
-  if (!selectedNoteId && activeNoteMode !== "create") {
+  if (loadingNote) return <NoteViewSkeleton />;
+
+  if (!noteId) {
     return (
       <div className="flex flex-col items-center justify-center h-screen gap-4 bg-(--sidebar-bg)">
         <FileText className="w-20 h-20 text-(--text-primary)" strokeWidth={1} />
@@ -272,7 +208,7 @@ const NoteView: React.FC = () => {
         <div className="flex justify-between items-start">
           <input
             className="text-(--text-primary) text-3xl font-semibold bg-transparent outline-none"
-            placeholder={activeNoteMode === "create" ? "Enter title..." : ""}
+            placeholder={"Enter title..."}
             value={fullNote.title}
             onChange={(e) => {
               const newTitle = e.target.value;
@@ -382,7 +318,7 @@ const NoteView: React.FC = () => {
 
       <textarea
         className="flex-1 w-full bg-(--sidebar-bg) text-(--text-primary) text-s  outline-none resize-none"
-        placeholder={activeNoteMode === "create" ? "Write your note..." : ""}
+        placeholder={"Write your note..."}
         value={fullNote.content}
         onChange={(e) => {
           const newContent = e.target.value;

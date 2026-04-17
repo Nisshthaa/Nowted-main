@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { useAppState } from "../../state/useAppState";
 import type { GetNotesParams, Note } from "../types/dataTypes";
 import { getNotes } from "../../api/noteAPI";
@@ -8,7 +8,11 @@ import { NoteListSkeleton } from "../Loader/LoadData";
 const NotesList: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const isFavorites = location.pathname.startsWith("/favorites");
+  const isArchived = location.pathname.startsWith("/archived");
+  const isTrash = location.pathname.startsWith("/trash");
 
+  const { folderId, folderName } = useParams();
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
@@ -21,13 +25,10 @@ const NotesList: React.FC = () => {
   const [isFetchingMore, setIsFetchingMore] = useState(false);
 
   const {
-    activeView,
     searchText,
     notes,
     setNotes,
-    setSelectedNoteId,
-    setActiveView,
-    setActiveNoteMode,
+
     folders,
     setSearchResults,
     setShowSearchDropdown,
@@ -50,66 +51,14 @@ const NotesList: React.FC = () => {
     return () => clearTimeout(timer);
   }, [searchText]);
 
-  //sync URL to activeView
-  useEffect(() => {
-    if (location.pathname.startsWith("/favorites")) {
-      setActiveView("favorites");
-    } else if (location.pathname.startsWith("/trash")) {
-      setActiveView("trash");
-    } else if (location.pathname.startsWith("/archived")) {
-      setActiveView("archived");
-    } else {
-      setActiveView("all");
-    }
-  }, [location.pathname, setActiveView]);
-
-
-  const getFolderIdFromUrl = () => {
-    const pathParts = location.pathname.split("/").filter(Boolean);
-    if (
-      pathParts.length >= 2 &&
-      !location.pathname.startsWith("/favorites") &&
-      !location.pathname.startsWith("/trash") &&
-      !location.pathname.startsWith("/archived")
-    ) {
-      return pathParts[1];
-    }
-    return null;
+  const filters: GetNotesParams = {
+    ...(isFavorites && { favorite: true }),
+    ...(isArchived && { archived: true }),
+    ...(isTrash && { deleted: "true" }),
+    ...(folderId && !isFavorites && !isArchived && !isTrash && { folderId }),
   };
 
-  const folderIdFromUrl = getFolderIdFromUrl();
-
-  //show notes on the basis of filters
-  const filters: GetNotesParams = (() => {
-    if (activeView === "favorites") {
-      return { favorite: true };
-    }
-    if (activeView === "archived") {
-      return { archived: true };
-    }
-    if (activeView === "trash") {
-      return { deleted: "true" };
-    }
-    if (folderIdFromUrl) return { folderId: folderIdFromUrl };
-    return {};
-  })();
-
-  //search on fav,archive or trash
-  const searchFilters: GetNotesParams = (() => {
-    if (activeView === "favorites") {
-      return { favorite: true };
-    }
-    if (activeView === "archived") {
-      return { archived: true };
-    }
-    if (activeView === "trash") {
-      return { deleted: "true" };
-    }
-    return {};
-  })();
-
   const filtersKey = JSON.stringify(filters);
-  const searchFiltersKey = JSON.stringify(searchFilters);
 
   //show search results
   useEffect(() => {
@@ -122,7 +71,7 @@ const NotesList: React.FC = () => {
 
       try {
         const res = await getNotes({
-          ...searchFilters,
+          ...filters,
           search: debouncedQuery,
         });
         const data = res.data.notes ?? [];
@@ -135,7 +84,7 @@ const NotesList: React.FC = () => {
     };
 
     fetchSearchResults();
-  }, [debouncedQuery, searchFiltersKey]);
+  }, [debouncedQuery, filtersKey]);
 
   useEffect(() => {
     if (debouncedQuery.trim()) return;
@@ -169,8 +118,9 @@ const NotesList: React.FC = () => {
       }
     };
 
-    setNotes([]);
-    pageRef.current = 1;
+    if (pageRef.current === 1) {
+      setNotes([]);
+    }
     setHasMore(true);
     loadNotes();
 
@@ -246,87 +196,68 @@ const NotesList: React.FC = () => {
   }, [filtersKey, debouncedQuery]);
 
   const handleClick = (note: Note) => {
-    setSelectedNoteId(note.id);
-    const shouldSearchAllNotes = debouncedQuery !== "" && activeView === "all";
+    const isFavorites = location.pathname.startsWith("/favorites");
+    const isArchived = location.pathname.startsWith("/archived");
+    const isTrash = location.pathname.startsWith("/trash");
 
-    if (activeView !== "trash") {
-      setActiveNoteMode("view");
-    }
-
-    if (activeView === "favorites") {
+    if (isFavorites) {
       navigate(`/favorites/${encodeURIComponent(note.title)}/${note.id}`);
-    } else if (activeView === "archived") {
+      return;
+    }
+
+    if (isArchived) {
       navigate(`/archived/${encodeURIComponent(note.title)}/${note.id}`);
-    } else if (activeView === "trash") {
+      return;
+    }
+
+    if (isTrash) {
       navigate(`/trash/${encodeURIComponent(note.title)}/${note.id}`);
-    } else if (folderIdFromUrl && !shouldSearchAllNotes) {
-      const notebook = folders.find((f) => f.id === folderIdFromUrl);
-      if (notebook) {
-        navigate(
-          `/${encodeURIComponent(notebook.name)}/${notebook.id}/${encodeURIComponent(note.title)}/${note.id}`,
-        );
-      }
-    } else if (activeView === "all") {
-      const noteFolder = folders.find((folder) => folder.id === note.folderId);
-      if (noteFolder) {
-        navigate(
-          `/${encodeURIComponent(noteFolder.name)}/${noteFolder.id}/${encodeURIComponent(note.title)}/${note.id}`,
-        );
-      }
+      return;
     }
+
+    const folder = folders.find((f) => f.id === note.folderId);
+
+    if (!folder) return;
+
+    navigate(
+      `/${encodeURIComponent(folder.name)}/${folder.id}/${encodeURIComponent(note.title)}/${note.id}`,
+    );
   };
 
-const displayedNotes = [...notes]
-  .filter((note) => {
-    if (activeView === "trash") return note.deletedAt;
+  const displayedNotes = [...notes]
+    .filter((note) => {
+      if (isTrash) return note.deletedAt;
 
-    if (activeView === "archived")
-      return note.isArchived && !note.deletedAt;
+      if (isArchived) return note.isArchived && !note.deletedAt;
 
-    if (activeView === "favorites")
-      return note.isFavorite && !note.deletedAt && !note.isArchived;
+      if (isFavorites)
+        return note.isFavorite && !note.deletedAt && !note.isArchived;
 
-
-    return !note.deletedAt && !note.isArchived;
-  })
-  .sort((a, b) => {
-    if (activeView === "trash" && a.deletedAt && b.deletedAt) {
-      return (
-        new Date(b.deletedAt).getTime() -
-        new Date(a.deletedAt).getTime()
-      );
-    }
-    return 0;
-  })
-  .filter(
-    (note, index, self) =>
-      self.findIndex((n) => n.id === note.id) === index
-  );
-
-  const getFolderNameFromUrl = () => {
-    const pathParts = location.pathname.split("/").filter(Boolean);
-    if (
-      pathParts.length >= 1 &&
-      !location.pathname.startsWith("/favorites") &&
-      !location.pathname.startsWith("/trash") &&
-      !location.pathname.startsWith("/archived")
-    ) {
-      return decodeURIComponent(pathParts[0]);
-    }
-    return "Select Folder";
-  };
+      return !note.deletedAt && !note.isArchived;
+    })
+    .sort((a, b) => {
+      if (isTrash && a.deletedAt && b.deletedAt) {
+        return (
+          new Date(b.deletedAt).getTime() - new Date(a.deletedAt).getTime()
+        );
+      }
+      return 0;
+    })
+    .filter(
+      (note, index, self) => self.findIndex((n) => n.id === note.id) === index,
+    );
 
   return (
     <div className="flex flex-col w-100 h-screen p-4 gap-5 bg-(--panel-bg)">
       <div className="sticky top-0 z-20 bg-(--panel-bg)">
         <h3 className="w-full min-w-0 shrink-0 py-1 font-semibold text-(--text-primary) text-2xl line-clamp-2">
-          {activeView === "favorites"
+          {isFavorites
             ? "Favorites"
-            : activeView === "archived"
+            : isArchived
               ? "Archived"
-              : activeView === "trash"
+              : isTrash
                 ? "Trash"
-                : getFolderNameFromUrl()}
+                : folderName || "All Notes"}
         </h3>
       </div>
 
@@ -371,7 +302,7 @@ const displayedNotes = [...notes]
           <p className="text-center text-(--text-primary)">Loading more...</p>
         )}
 
-        {!hasMore && notes.length > 0 && (
+        {!hasMore && displayedNotes.length > 0 && (
           <p className="text-center text-(--text-secondary)">No more notes</p>
         )}
       </div>

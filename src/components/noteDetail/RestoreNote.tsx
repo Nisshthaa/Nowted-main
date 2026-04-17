@@ -1,28 +1,19 @@
 import { History } from "lucide-react";
 import React from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { useAppState } from "../../state/useAppState";
 import { restoreNote } from "../../api/noteAPI";
 import { showError, showSuccess } from "../utils/notifications";
-import { getFoldersData } from "../../api/folderAPI";
 import type { RestoreProps } from "../types/dataTypes";
+import { getFoldersData } from "../../api/folderAPI";
 
 const RestoreNote: React.FC<RestoreProps> = ({ noteId, noteTitle }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const pathParts = location.pathname.split("/").filter(Boolean);
 
-const folderName = pathParts[0]; 
-const folderId = pathParts[1];   
+  const { folderName, folderId } = useParams();
 
-  const {
-    updateNoteInList,
-    setSelectedNoteId,
-    setActiveView,
-    setActiveNoteMode,
-    setFolders,
-    
-  } = useAppState();
+  const { updateNoteInList, setFolders } = useAppState();
 
   const handleRestore = async () => {
     if (!noteId) return;
@@ -30,12 +21,10 @@ const folderId = pathParts[1];
     try {
       await restoreNote(noteId);
 
-      const response = await getFoldersData();
-      setFolders(response.data.folders);
-
       updateNoteInList(noteId, { deletedAt: null });
-      setSelectedNoteId(null);
-      setActiveNoteMode("view");
+
+      const res = await getFoldersData();
+      setFolders(res.data.folders);
 
       if (location.pathname.includes("/favorites")) {
         navigate("/favorites");
@@ -46,8 +35,6 @@ const folderId = pathParts[1];
       } else if (folderId && folderName) {
         navigate(`/${folderName}/${folderId}`);
       }
-
-      setActiveView("all");
 
       showSuccess("Note Restored!");
     } catch (err) {

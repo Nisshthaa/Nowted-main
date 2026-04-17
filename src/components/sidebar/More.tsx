@@ -6,12 +6,7 @@ import { useNavigate } from "react-router-dom";
 const More: React.FC = () => {
   const navigate = useNavigate();
 
-  const {
-    setActiveView,
-    setSelectedNoteId,
-    setActiveNoteMode,
-    setSearchText,
-  } = useAppState();
+  const { setSearchText } = useAppState();
 
   return (
     <div className="flex flex-col w-80 h-39 gap-2 ">
@@ -25,9 +20,6 @@ const More: React.FC = () => {
       <div
         className="flex w-80 h-39 gap-4 hover:bg-(--btn-hover) items-center p-1 rounded-[3px]"
         onClick={() => {
-          setActiveView("favorites");
-          setSelectedNoteId(null);
-          setActiveNoteMode("view");
           setSearchText("");
 
           navigate("/favorites");
@@ -46,9 +38,6 @@ const More: React.FC = () => {
       <div
         className="flex w-80 h-39 gap-4 hover:bg-(--btn-hover) p-1 rounded-[3px]"
         onClick={() => {
-          setActiveView("trash");
-          setSelectedNoteId(null);
-          setActiveNoteMode("restore");
           setSearchText("");
 
           navigate("/trash");
@@ -67,9 +56,6 @@ const More: React.FC = () => {
       <div
         className="flex w-80 h-39 gap-4 hover:bg-(--btn-hover) p-1 rounded-[3px]"
         onClick={() => {
-          setActiveView("archived");
-          setSelectedNoteId(null);
-          setActiveNoteMode("view");
           setSearchText("");
 
           navigate("/archived");

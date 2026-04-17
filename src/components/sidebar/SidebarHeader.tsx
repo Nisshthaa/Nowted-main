@@ -5,20 +5,17 @@ import { Sun, Moon } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import type { Note } from "../types/dataTypes";
 import logo from "/logo.svg";
+import { createNote } from "../../api/noteAPI";
 
 const SidebarHeader: React.FC = () => {
   const {
-    setActiveNoteMode,
     searchText,
     setSearchText,
-
-    setSelectedNoteId,
     showSearchDropdown,
     setShowSearchDropdown,
     folders,
-    setActiveView,
     searchResults,
-    activeView,
+    addNoteToList
   } = useAppState();
 
   const navigate = useNavigate();
@@ -75,24 +72,15 @@ const SidebarHeader: React.FC = () => {
 
   //show search result
   const handleSearchResultClick = (note: Note) => {
-    setSelectedNoteId(note.id);
-    setActiveNoteMode("view");
+    if (!note.folderId) return;
 
-    if (activeView === "favorites") {
-      navigate(`/favorites/${encodeURIComponent(note.title)}/${note.id}`);
-    } else if (activeView === "trash") {
-      navigate(`/trash/${encodeURIComponent(note.title)}/${note.id}`);
-    } else if (activeView === "archived") {
-      navigate(`/archived/${encodeURIComponent(note.title)}/${note.id}`);
-    } else {
-      const noteFolder = folders.find((folder) => folder.id === note.folderId);
-      if (noteFolder) {
-        setActiveView("all");
-        navigate(
-          `/${encodeURIComponent(noteFolder.name)}/${noteFolder.id}/${encodeURIComponent(note.title)}/${note.id}`,
-        );
-      }
-    }
+    const folder = folders.find((f) => f.id === note.folderId);
+
+    const folderName = folder?.name || "unknown";
+
+    navigate(
+      `/${encodeURIComponent(folderName)}/${note.folderId}/${encodeURIComponent(note.title || "Untitled")}/${note.id}`,
+    );
 
     setShowSearchDropdown(false);
     setSearchText("");
@@ -118,25 +106,44 @@ const SidebarHeader: React.FC = () => {
     }
   };
 
-  //add note
-  const addNote = () => {
-    const isSpecialView =
-      location.pathname.startsWith("/favorites") ||
-      location.pathname.startsWith("/trash") ||
-      location.pathname.startsWith("/archived");
-    if (isSpecialView) return;
 
+const handleNewNote = async () => {
+  try {
     const pathParts = location.pathname.split("/").filter(Boolean);
-    if (pathParts.length < 2) return;
-
-    const folderName = decodeURIComponent(pathParts[0]);
+    const folderName = decodeURIComponent(pathParts[0] || "");
     const folderId = pathParts[1];
 
-    setSelectedNoteId(null);
-    setActiveNoteMode("create");
+    if (!folderId) return;
 
-    navigate(`/${folderName}/${folderId}/create`);
-  };
+    const res = await createNote({
+      title: "Untitled",
+      content: "",
+      folderId,
+    });
+
+    const newId = res.data.id;
+
+    const newNote = {
+      id: newId,
+      title: "Untitled",
+      content: "",
+      preview: "",
+      createdAt: new Date().toISOString(),
+      isFavorite: false,
+      isArchived: false,
+      folderId,
+    };
+
+
+    addNoteToList(newNote);
+
+    navigate(
+      `/${encodeURIComponent(folderName)}/${folderId}/${encodeURIComponent("Untitled")}/${newId}`
+    );
+  } catch (err) {
+    console.error(err);
+  }
+};
 
   return (
     <div className="flex flex-col gap-4  ">
@@ -223,7 +230,7 @@ const SidebarHeader: React.FC = () => {
           <button
             className=" flex items-center justify-center gap-2 w-full h-10 bg-(--btn-bg) hover:bg-(--btn-hover) active:scale-[0.98] text-(--text-primary) text-[18px] font-medium rounded-md transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer"
             style={{ fontFamily: "var(--font-primary)" }}
-            onClick={addNote}
+            onClick={handleNewNote}
           >
             <Plus className="h-6 w-6" /> New Note
           </button>
